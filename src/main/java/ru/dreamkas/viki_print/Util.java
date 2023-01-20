@@ -1,7 +1,7 @@
-package ru.dreamkas.pirit;
+package ru.dreamkas.viki_print;
 
 import java.nio.charset.Charset;
-import java.util.Arrays;
+import java.util.function.Function;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -182,5 +182,21 @@ public class Util {
             throw new RuntimeException(e);
         }
         return result;
+    }
+
+    public static String maskNonPrintableChars(String value) {
+        return maskNonPrintableChars(value, c -> "$" + String.format("%02X", (int) c));
+    }
+
+    private static String maskNonPrintableChars(String value, Function<Character, String> mask) {
+        if (value == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (char c : value.toCharArray()) {
+            sb.append(c >= 32 ? c : mask.apply(c));
+        }
+        String result = StringUtils.replaceChars(sb.toString(), "«»", "\"\"");
+        return StringUtils.trimToNull(result) == null ? null : result;
     }
 }

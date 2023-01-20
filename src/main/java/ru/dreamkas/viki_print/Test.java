@@ -1,12 +1,11 @@
-package ru.dreamkas.pirit;
+package ru.dreamkas.viki_print;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 
-import static ru.dreamkas.pirit.KMPurchaseOperation.maskNonPrintableChars;
-import static ru.dreamkas.pirit.Util.*;
+import static ru.dreamkas.viki_print.Util.*;
 
 public class Test {
     public static void main(String[] args) {
