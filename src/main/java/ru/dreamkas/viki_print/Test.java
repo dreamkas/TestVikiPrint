@@ -20,6 +20,7 @@ public class Test {
         makeKKTRequest(0x40, "Текст");
         makeKKTRequest(0x31, "2");
 
+
         //Открытие и закрытие смены, печать X-отчета
         makeKKTRequest(0x23, "Кассир Петров");
         makeKKTRequest(0x20, "");
