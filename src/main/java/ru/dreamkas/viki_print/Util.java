@@ -126,7 +126,7 @@ public class Util {
 
             port.writeBytes(result);
 
-            Thread.sleep(500);
+            Thread.sleep(200);
             checkCrc(port.readBytes());
         } catch (Exception e) {
             throw new RuntimeException(e);
