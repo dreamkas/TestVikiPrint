@@ -81,7 +81,13 @@ public class PrinterTest {
 
     @Test
     public void testPurchaseInPacketMode() throws Exception {
+        Object[] data = VikiPrintExamples.executeCommand(port, 0x79, "1", "OTc4MDIwMTM3OTYy", "0", "2", "900", "10", "1");
+        int tag2106 = Integer.parseInt((String) data[1]);
+        VikiPrintExamples.executeCommand(port, 0x79,"2","1","", "", "", "", "");
+
         VikiPrintExamples.executeCommandPacket(port, 0x30, 2 | 16, 1, "Петров", "", 0, "");
+        VikiPrintExamples.executeCommandPacket(port, 0x79,tag2106,"OTc4MDIwMTM3OTYy","2","0","15","10","");
+        VikiPrintExamples.executeCommandPacket(port, 0x42,"Товар","","900","100","0","", "", "","10","","4","4","", "", "");
         VikiPrintExamples.executeCommandPacket(port, 0x42, "Сахар", "", 1, 100, 4, "", "", "");
         VikiPrintExamples.executeCommandPacket(port, 0x42,"Сахар","","1.111","100","4","", "", "","11");
         VikiPrintExamples.executeCommandPacket(port, 0x44);
