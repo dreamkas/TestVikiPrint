@@ -114,11 +114,10 @@ public class VikiPrintExamples {
             }
             byte[] response = port.readBytes();
             System.out.printf("<== %s%n", toString(response));
-            checkCrc(response);
+            Object[] responseData = parseResponse(response);
 
-            String data = new String(response, ENCODING);
-
-            int errorCode = Integer.parseInt(data.substring(4, 6), 16);
+            responsePacketId = (int) responseData[0];
+            int errorCode = (int) responseData[2];
             if (errorCode != 0) {
                 if (errorCode == 0x01 || errorCode == 0x03) {
                     throw new Exception((String) executeCommand(port, 0x06, 1)[2]);
@@ -126,9 +125,8 @@ public class VikiPrintExamples {
                 throw new Exception(String.format("Ошибка 0x%s", toHexString(errorCode)));
             }
 
-            responsePacketId = data.charAt(1);
-
-            result = Arrays.stream(data.substring(6).split("" + FS)).toArray();
+            result = new Object[responseData.length-2];
+            System.arraycopy(responseData, 3, result, 0, responseData.length - 3);
         }
         return result;
     }
@@ -154,6 +152,29 @@ public class VikiPrintExamples {
             .getBytes(ENCODING);
     }
 
+    private static Object[] parseResponse(byte[] response) throws Exception {
+        String data = new String(response, ENCODING);
+        int packetId = data.charAt(1);
+        int command = Integer.parseInt(data.substring(2, 4), 16);
+        int errorCode = Integer.parseInt(data.substring(4, 6), 16);
+
+        String dataPart = data.substring(0, data.indexOf(ETX) + 1);
+        String crcPart = data.substring(data.indexOf(ETX) + 1);
+        int crc = Integer.parseInt(crcPart, 16);
+        if (crc != calculateCrc(dataPart)) {
+            throw new Exception("Wrong CRC");
+        }
+
+        Object[] dataArray = Arrays.stream(data.substring(6).split("" + FS)).toArray();
+        Object[] result = new Object[3 + dataArray.length];
+        result[0] = packetId;
+        result[1] = command;
+        result[2] = errorCode;
+        System.arraycopy(dataArray, 0, result, 3, dataArray.length);
+        result[result.length - 1] = crc;
+        return result;
+    }
+
     private static int calculateCrc(String string) {
         byte[] rawPacket = string.getBytes(ENCODING);
         int crc = 0;
@@ -161,16 +182,6 @@ public class VikiPrintExamples {
             crc = (crc ^ rawPacket[i]) & 0xFF;
         }
         return crc;
-    }
-
-    private static void checkCrc(byte[] bytes) throws Exception {
-        String s = new String(bytes, ENCODING);
-        String dataPart = s.substring(0, s.indexOf(ETX) + 1);
-        String crcPart = s.substring(s.indexOf(ETX) + 1);
-        int crc = Integer.parseInt(crcPart, 16);
-        if (crc != calculateCrc(dataPart)) {
-            throw new Exception("Wrong CRC");
-        }
     }
 
     private static String toString(byte[] bytes) {
