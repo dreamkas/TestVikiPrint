@@ -63,36 +63,35 @@ public class VikiPrintExamples {
             executeCommand(port, 0x31, 2);
             System.out.println();
 
-//            System.out.println("Продажа штучного и весового товара (Обычный режим формирования документа)");
-//            executeCommand(port, 0x30, 2, 1, "Петров", "", 0, "");
-//            executeCommand(port, 0x42, "Сахар", "", 1, 100, 4, "", "", "");
-//            executeCommandPacket(port, 0x42,"Сахар","","1.111","100","4","", "", "","11");
-//            executeCommand(port, 0x44);
-//            executeCommand(port, 0x47, 0, 1000);
-//            responseData = executeCommand(port, 0x31, 2);
-//            System.out.printf("ФД: %s%n", responseData[3]);
-//            System.out.printf("ФП: %s%n", responseData[4]);
-//            System.out.printf("Номер смены: %s%n", responseData[5]);
-//            System.out.printf("Номер документа в смене: %s%n", responseData[6]);
-//            System.out.printf("Дата документа: %s%n", responseData[7]);
-//            System.out.printf("Время документа: %s%n", responseData[8]);
-//            System.out.println();
-//
-//            System.out.println("Продажа штучного и весового товара (Пакетный режим формирования документа)");
-//            executeCommandPacket(port, 0x30, 2 | 16, 1, "Петров", "", 0, "");
-//            executeCommandPacket(port, 0x42, "Сахар", "", 1, 100, 4, "", "", "");
-//            executeCommandPacket(port, 0x42,"Сахар","","1.111","100","4","", "", "","11");
-//            executeCommandPacket(port, 0x44);
-//            executeCommandPacket(port, 0x47, 0, 1000);
-//            responseData = executeCommand(port, 0x31, 2);
-//            System.out.printf("ФД: %s%n", responseData[3]);
-//            System.out.printf("ФП: %s%n", responseData[4]);
-//            System.out.printf("Номер смены: %s%n", responseData[5]);
-//            System.out.printf("Номер документа в смене: %s%n", responseData[6]);
-//            System.out.printf("Дата документа: %s%n", responseData[7]);
-//            System.out.printf("Время документа: %s%n", responseData[8]);
-//            System.out.println();
+            System.out.println("Продажа штучного и весового товара (Обычный режим формирования документа)");
+            executeCommand(port, 0x30, 2, 1, "Петров", "", 0, "");
+            executeCommand(port, 0x42, "Сахар", "", 1, 100, 4, "", "", "");
+            executeCommandPacket(port, 0x42,"Сахар","","1.111","100","4","", "", "","11");
+            executeCommand(port, 0x44);
+            executeCommand(port, 0x47, 0, 1000);
+            responseData = executeCommand(port, 0x31, 2);
+            System.out.printf("ФД: %s%n", responseData[3]);
+            System.out.printf("ФП: %s%n", responseData[4]);
+            System.out.printf("Номер смены: %s%n", responseData[5]);
+            System.out.printf("Номер документа в смене: %s%n", responseData[6]);
+            System.out.printf("Дата документа: %s%n", responseData[7]);
+            System.out.printf("Время документа: %s%n", responseData[8]);
+            System.out.println();
 
+            System.out.println("Продажа штучного и весового товара (Пакетный режим формирования документа)");
+            executeCommandPacket(port, 0x30, 2 | 16, 1, "Петров", "", 0, "");
+            executeCommandPacket(port, 0x42, "Сахар", "", 1, 100, 4, "", "", "");
+            executeCommandPacket(port, 0x42,"Сахар","","1.111","100","4","", "", "","11");
+            executeCommandPacket(port, 0x44);
+            executeCommandPacket(port, 0x47, 0, 1000);
+            responseData = executeCommand(port, 0x31, 2);
+            System.out.printf("ФД: %s%n", responseData[3]);
+            System.out.printf("ФП: %s%n", responseData[4]);
+            System.out.printf("Номер смены: %s%n", responseData[5]);
+            System.out.printf("Номер документа в смене: %s%n", responseData[6]);
+            System.out.printf("Дата документа: %s%n", responseData[7]);
+            System.out.printf("Время документа: %s%n", responseData[8]);
+            System.out.println();
 
 //            Закрытие архива ФН
 //            responseData = executeCommand(port, 0x71, "Петров");
@@ -155,8 +154,8 @@ public class VikiPrintExamples {
                 throw new Exception(String.format("Ошибка 0x%s", toHexString(errorCode)));
             }
 
-            result = new Object[responseData.length-3];
-            System.arraycopy(responseData, 3, result, 0, responseData.length - 3);
+            result = new Object[responseData.length-4];
+            System.arraycopy(responseData, 3, result, 0, responseData.length - 4);
         }
         return result;
     }
@@ -198,7 +197,7 @@ public class VikiPrintExamples {
         }
 
         Object[] dataArray = Arrays.stream(dataPart.split(String.valueOf(FS))).toArray();
-        Object[] result = new Object[3 + dataArray.length];
+        Object[] result = new Object[3 + dataArray.length + 1];
         result[0] = packetId;
         result[1] = command;
         result[2] = errorCode;
