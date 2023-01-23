@@ -93,9 +93,12 @@ public class PrinterTest {
     @Test
     @DisplayName("Формирование чека в синхронном режиме")
     public void testPurchaseInPacketMode() throws Exception {
+        // Запрос проверки КМ в ФН
         VikiPrintExamples.executeCommand(port, 0x79, 3);
         Object[] data = VikiPrintExamples.executeCommand(port, 0x79, 1, "OTc4MDIwMTM3OTYy", 0, 2, 900, 10, 1);
         int tag2106 = Integer.parseInt((String) data[1]);
+
+        // Подтверждение добавления КМ в чек
         VikiPrintExamples.executeCommand(port, 0x79, 2, 1, "", "", "", "", "");
 
         VikiPrintExamples.executeCommandPacket(port, 0x30, 2 | 16, 1, "Петров", "", 0, "");
@@ -111,9 +114,12 @@ public class PrinterTest {
     @Test
     @DisplayName("Формирование чека в пакетном режиме")
     public void testPurchaseInRegularMode() throws Exception {
+        // Запрос проверки КМ в ФН
         VikiPrintExamples.executeCommand(port, 0x79, 3);
         Object[] data = VikiPrintExamples.executeCommand(port, 0x79, 1, "OTc4MDIwMTM3OTYy", 0, 2, 900, 10, 1);
         int tag2106 = Integer.parseInt((String) data[1]);
+
+        // Подтверждение добавления КМ в чек
         VikiPrintExamples.executeCommand(port, 0x79, 2, 1, "", "", "", "", "");
 
         VikiPrintExamples.executeCommand(port, 0x30, 2, 1, "Петров", "", 0, "");
