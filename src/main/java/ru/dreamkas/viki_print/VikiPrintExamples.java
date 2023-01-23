@@ -12,6 +12,8 @@ import jssc.SerialPort;
 public class VikiPrintExamples {
     private static final Pattern LOG_PATTERN = Pattern.compile("\\p{Print}");
     private static final Charset ENCODING = Charset.forName("cp866");
+    private static final byte ENQ = 0x05;
+    private static final byte ACK = 0x06;
     private static final char STX = 0x02;
     private static final char ETX = 0x03;
     private static final char FS = 0x1C;
@@ -23,6 +25,10 @@ public class VikiPrintExamples {
         try {
             port.openPort();
             port.purgePort(SerialPort.PURGE_TXCLEAR | SerialPort.PURGE_RXCLEAR);
+
+            System.out.println("Проверка связи с ККТ");
+            checkConnection(port);
+            System.out.println();
 
             Object[] responseData;
 
@@ -89,6 +95,19 @@ public class VikiPrintExamples {
         }
     }
 
+    private static void checkConnection(SerialPort port) throws Exception {
+        port.writeByte(ENQ);
+        System.out.printf("==> %s%n", ENQ);
+        while (port.getInputBufferBytesCount() <= 0) {
+            Thread.yield();
+        }
+        byte[] response = port.readBytes();
+        System.out.printf("<== %s%n", toString(response));
+        if (response[0] != ACK) {
+            throw new Exception("Wrong ACK");
+        }
+    }
+
     private static Object[] executeCommand(SerialPort port, int command, Object... parameters) throws Exception {
         return execute(port, command, false, parameters);
     }
@@ -107,6 +126,7 @@ public class VikiPrintExamples {
             return result;
         }
 
+        Thread.sleep(200);
         int responsePacketId = 0;
         while (responsePacketId < PACKET_ID - 1) {
             while (port.getInputBufferBytesCount() <= 0) {
@@ -133,19 +153,20 @@ public class VikiPrintExamples {
 
     private static byte[] makeRequest(int command, Object... parameters) {
         StringBuilder strPacket = new StringBuilder()
-            .append(STX)
-            .append(PASSWORD)
-            .append((char) PACKET_ID++)
-            .append(toHexString(command));
-        if (parameters.length == 0) {
-            strPacket.append(FS);
-        }
-        for (Object param : parameters) {
-            strPacket.append(param).append(FS);
-        }
-        strPacket.append(ETX);
+            .append(STX)                                    // STX
+            .append(PASSWORD)                               // Пароль связи
+            .append((char) PACKET_ID++)                     // ID пакета
+            .append(toHexString(command));                  // Код команды
+        if (parameters.length == 0) {                       //
+            strPacket.append(FS);                           //
+        } else {                                            //
+            for (Object param : parameters) {               //
+                strPacket.append(param).append(FS);         // Данные
+            }                                               //
+        }                                                   //
+        strPacket.append(ETX);                              // ETX
         int crc = calculateCrc(strPacket.toString());
-        strPacket.append(toHexString(crc));
+        strPacket.append(toHexString(crc));                 // CRC
 
         return strPacket
             .toString()
@@ -154,18 +175,19 @@ public class VikiPrintExamples {
 
     private static Object[] parseResponse(byte[] response) throws Exception {
         String data = new String(response, ENCODING);
-        int packetId = data.charAt(1);
-        int command = Integer.parseInt(data.substring(2, 4), 16);
-        int errorCode = Integer.parseInt(data.substring(4, 6), 16);
+        int packetId = data.charAt(1);                              // ID пакета
+        int command = Integer.parseInt(data.substring(2, 4), 16);   // Код команды
+        int errorCode = Integer.parseInt(data.substring(4, 6), 16); // Код ошибки
+        String dataPart = data.substring(6, data.indexOf(ETX));     // Данные
 
-        String dataPart = data.substring(0, data.indexOf(ETX) + 1);
+        String dataForCRCPart = data.substring(0, data.indexOf(ETX) + 1);
         String crcPart = data.substring(data.indexOf(ETX) + 1);
         int crc = Integer.parseInt(crcPart, 16);
-        if (crc != calculateCrc(dataPart)) {
+        if (crc != calculateCrc(dataForCRCPart)) {
             throw new Exception("Wrong CRC");
         }
 
-        Object[] dataArray = Arrays.stream(data.substring(6).split("" + FS)).toArray();
+        Object[] dataArray = Arrays.stream(dataPart.split(String.valueOf(FS))).toArray();
         Object[] result = new Object[3 + dataArray.length];
         result[0] = packetId;
         result[1] = command;
