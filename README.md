@@ -1,4 +1,4 @@
-# Test-Pirit
+# VikiPrintExample
 
 Описание базовых команд протокола Пирит
 

@@ -8,6 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import jssc.SerialPort;
 
+import static ru.dreamkas.viki_print.Util.makeKKTRequest;
+
 @SuppressWarnings("DuplicatedCode")
 public class VikiPrintExamples {
     private static final Pattern LOG_PATTERN = Pattern.compile("\\p{Print}");
@@ -44,7 +46,7 @@ public class VikiPrintExamples {
             System.out.println();
 
             System.out.println("Запрос флагов статуса ККТ");
-            responseData = executeCommand(port, 0x00, "3");
+            responseData = executeCommand(port, 0x00);
             System.out.printf("Статус фатального состояния ККТ: %s%n", responseData[0]);
             System.out.printf("Статус текущих флагов ККТ: %s%n", responseData[1]);
             System.out.printf("Статус документа: %s%n", responseData[2]);
@@ -63,9 +65,10 @@ public class VikiPrintExamples {
             executeCommand(port, 0x31, 2);
             System.out.println();
 
-            System.out.println("Продажа штучного товара (Обычный режим формирования документа)");
+            System.out.println("Продажа штучного и весового товара (Обычный режим формирования документа)");
             executeCommand(port, 0x30, 2, 1, "Петров", "", 0, "");
             executeCommand(port, 0x42, "Сахар", "", 1, 100, 4, "", "", "");
+            executeCommandPacket(port, 0x42,"Сахар","","1.111","100","4","", "", "","11");
             executeCommand(port, 0x44);
             executeCommand(port, 0x47, 0, 1000);
             responseData = executeCommand(port, 0x31, 2);
@@ -77,9 +80,10 @@ public class VikiPrintExamples {
             System.out.printf("Время документа: %s%n", responseData[8]);
             System.out.println();
 
-            System.out.println("Продажа штучного товара (Пакетный режим формирования документа)");
+            System.out.println("Продажа штучного и весового товара (Пакетный режим формирования документа)");
             executeCommandPacket(port, 0x30, 2 | 16, 1, "Петров", "", 0, "");
             executeCommandPacket(port, 0x42, "Сахар", "", 1, 100, 4, "", "", "");
+            executeCommandPacket(port, 0x42,"Сахар","","1.111","100","4","", "", "","11");
             executeCommandPacket(port, 0x44);
             executeCommandPacket(port, 0x47, 0, 1000);
             responseData = executeCommand(port, 0x31, 2);
@@ -90,12 +94,21 @@ public class VikiPrintExamples {
             System.out.printf("Дата документа: %s%n", responseData[7]);
             System.out.printf("Время документа: %s%n", responseData[8]);
             System.out.println();
+
+
+//            Закрытие архива ФН
+//            responseData = executeCommand(port, 0x71, "Петров");
+//            System.out.printf("ФД: %s%n", responseData[0]);
+//            System.out.printf("ФП: %s%n", responseData[1]);
+//            System.out.printf("Дата документа: %s%n", responseData[2]);
+//            System.out.printf("Время документа: %s%n", responseData[3]);
+
         } finally {
             port.closePort();
         }
     }
 
-    private static void checkConnection(SerialPort port) throws Exception {
+    public static void checkConnection(SerialPort port) throws Exception {
         port.writeByte(ENQ);
         System.out.printf("==> %s%n", ENQ);
         while (port.getInputBufferBytesCount() <= 0) {
@@ -108,11 +121,11 @@ public class VikiPrintExamples {
         }
     }
 
-    private static Object[] executeCommand(SerialPort port, int command, Object... parameters) throws Exception {
+    public static Object[] executeCommand(SerialPort port, int command, Object... parameters) throws Exception {
         return execute(port, command, false, parameters);
     }
 
-    private static void executeCommandPacket(SerialPort port, int command, Object... parameters) throws Exception {
+    public static void executeCommandPacket(SerialPort port, int command, Object... parameters) throws Exception {
         execute(port, command, true, parameters);
     }
 
@@ -126,7 +139,6 @@ public class VikiPrintExamples {
             return result;
         }
 
-        Thread.sleep(200);
         int responsePacketId = 0;
         while (responsePacketId < PACKET_ID - 1) {
             while (port.getInputBufferBytesCount() <= 0) {
@@ -145,7 +157,7 @@ public class VikiPrintExamples {
                 throw new Exception(String.format("Ошибка 0x%s", toHexString(errorCode)));
             }
 
-            result = new Object[responseData.length-2];
+            result = new Object[responseData.length-3];
             System.arraycopy(responseData, 3, result, 0, responseData.length - 3);
         }
         return result;
