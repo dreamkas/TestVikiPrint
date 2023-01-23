@@ -10,6 +10,7 @@ import jssc.SerialPort;
 
 @SuppressWarnings("DuplicatedCode")
 public class VikiPrintExamples {
+    public static final String COM_PORT = "COM11";
     private static final Pattern LOG_PATTERN = Pattern.compile("\\p{Print}");
     private static final Charset ENCODING = Charset.forName("cp866");
     private static final byte ENQ = 0x05;
@@ -21,7 +22,7 @@ public class VikiPrintExamples {
     private static int PACKET_ID = 0x20;
 
     public static void main(String[] args) throws Exception {
-        SerialPort port = new SerialPort("COM11");
+        SerialPort port = new SerialPort(COM_PORT);
         try {
             port.openPort();
             port.purgePort(SerialPort.PURGE_TXCLEAR | SerialPort.PURGE_RXCLEAR);

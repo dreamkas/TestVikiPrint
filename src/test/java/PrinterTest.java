@@ -1,13 +1,18 @@
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import com.sun.xml.internal.ws.policy.sourcemodel.AssertionData;
 
 import jssc.SerialPort;
 import jssc.SerialPortException;
@@ -18,7 +23,7 @@ public class PrinterTest {
 
     @BeforeAll
     public static void setup() throws Exception {
-        port = new SerialPort("COM11");
+        port = new SerialPort(VikiPrintExamples.COM_PORT);
         port.openPort();
         VikiPrintExamples.checkConnection(port);
     }
@@ -66,15 +71,18 @@ public class PrinterTest {
         if ((status & (1L << 2)) != 0) {
             VikiPrintExamples.executeCommand(port, 0x21, "Администратор"); // Сформировать отчет о закрытии смены (0x21)
         }
-        VikiPrintExamples.executeCommand(port, 0x60,
+        LocalDateTime now = LocalDateTime.now();
+        String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
+        String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
+        Object[] response = VikiPrintExamples.executeCommand(port, 0x60,
             0,
             "1000000000008261",
             "1122334455",
             1,
             0,
             "Петров",
-            LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyy")),
-            new SimpleDateFormat("HHmmss").format(Calendar.getInstance().getTime()),
+            date,
+            time,
             "            НАЗВАНИЕ ОРГАНИЗАЦИИ            ",
             "",
             "             АДРЕС ОРГАНИЗАЦИИ              ",
@@ -88,6 +96,13 @@ public class PrinterTest {
             2,
             4
         ); // Регистрация ККТ
+
+        Assertions.assertNotNull(response[0], "Не подучен номер ФД");
+        Assertions.assertNotNull(response[1], "Не подучена ФП");
+        date = (String) response[2];
+        time = (String) response[3];
+        LocalDateTime regDate = LocalDateTime.parse(date + time, DateTimeFormatter.ofPattern("ddMMyyHHmmss"));
+        Assertions.assertTrue(ChronoUnit.MINUTES.between(regDate, LocalDateTime.now()) < 5);
     }
 
     @Test
@@ -108,7 +123,17 @@ public class PrinterTest {
         VikiPrintExamples.executeCommandPacket(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);
         VikiPrintExamples.executeCommandPacket(port, 0x44);
         VikiPrintExamples.executeCommandPacket(port, 0x47, 0, 1000);
-        VikiPrintExamples.executeCommand(port, 0x31, "2");
+        Object[] response = VikiPrintExamples.executeCommand(port, 0x31, "2");
+        Assertions.assertNotNull(response[3], "Не подучен номер ФД");
+        Assertions.assertNotNull(response[4], "Не подучена ФП");
+        Assertions.assertNotNull(response[5], "Не подучена номер смены");
+        Assertions.assertNotNull(response[6], "Не подучен номер документа в смене");
+        Assertions.assertNotNull(response[7], "Не подучен дата документа");
+        Assertions.assertNotNull(response[8], "Не подучен время документа");
+        String date = (String) response[7];
+        String time = (String) response[8];
+        LocalDateTime regDate = LocalDateTime.parse(date + time, DateTimeFormatter.ofPattern("ddMMyyHHmmss"));
+        Assertions.assertTrue(ChronoUnit.MINUTES.between(regDate, LocalDateTime.now()) < 5);
     }
 
     @Test
@@ -129,6 +154,16 @@ public class PrinterTest {
         VikiPrintExamples.executeCommand(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);
         VikiPrintExamples.executeCommand(port, 0x44);
         VikiPrintExamples.executeCommand(port, 0x47, 0, 1000.0);
-        VikiPrintExamples.executeCommand(port, 0x31, 2);
+        Object[] response = VikiPrintExamples.executeCommand(port, 0x31, 2);
+        Assertions.assertNotNull(response[3], "Не подучен номер ФД");
+        Assertions.assertNotNull(response[4], "Не подучена ФП");
+        Assertions.assertNotNull(response[5], "Не подучена номер смены");
+        Assertions.assertNotNull(response[6], "Не подучен номер документа в смене");
+        Assertions.assertNotNull(response[7], "Не подучен дата документа");
+        Assertions.assertNotNull(response[8], "Не подучен время документа");
+        String date = (String) response[7];
+        String time = (String) response[8];
+        LocalDateTime regDate = LocalDateTime.parse(date + time, DateTimeFormatter.ofPattern("ddMMyyHHmmss"));
+        Assertions.assertTrue(ChronoUnit.MINUTES.between(regDate, LocalDateTime.now()) < 5);
     }
 }
