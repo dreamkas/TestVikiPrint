@@ -1,9 +1,6 @@
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Calendar;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -12,7 +9,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.sun.xml.internal.ws.policy.sourcemodel.AssertionData;
 
 import jssc.SerialPort;
 import jssc.SerialPortException;
@@ -97,8 +93,8 @@ public class PrinterTest {
             4
         ); // Регистрация ККТ
 
-        Assertions.assertNotNull(response[0], "Не подучен номер ФД");
-        Assertions.assertNotNull(response[1], "Не подучена ФП");
+        Assertions.assertNotNull(response[0], "Не получен номер ФД");
+        Assertions.assertNotNull(response[1], "Не получена ФП");
         date = (String) response[2];
         time = (String) response[3];
         LocalDateTime regDate = LocalDateTime.parse(date + time, DateTimeFormatter.ofPattern("ddMMyyHHmmss"));
@@ -155,12 +151,12 @@ public class PrinterTest {
         VikiPrintExamples.executeCommand(port, 0x44);
         VikiPrintExamples.executeCommand(port, 0x47, 0, 1000.0);
         Object[] response = VikiPrintExamples.executeCommand(port, 0x31, 2);
-        Assertions.assertNotNull(response[3], "Не подучен номер ФД");
-        Assertions.assertNotNull(response[4], "Не подучена ФП");
-        Assertions.assertNotNull(response[5], "Не подучена номер смены");
-        Assertions.assertNotNull(response[6], "Не подучен номер документа в смене");
-        Assertions.assertNotNull(response[7], "Не подучен дата документа");
-        Assertions.assertNotNull(response[8], "Не подучен время документа");
+        Assertions.assertNotNull(response[3], "Не получен номер ФД");
+        Assertions.assertNotNull(response[4], "Не получена ФП");
+        Assertions.assertNotNull(response[5], "Не получена номер смены");
+        Assertions.assertNotNull(response[6], "Не получен номер документа в смене");
+        Assertions.assertNotNull(response[7], "Не получен дата документа");
+        Assertions.assertNotNull(response[8], "Не получен время документа");
         String date = (String) response[7];
         String time = (String) response[8];
         LocalDateTime regDate = LocalDateTime.parse(date + time, DateTimeFormatter.ofPattern("ddMMyyHHmmss"));
