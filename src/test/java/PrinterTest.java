@@ -125,12 +125,12 @@ public class PrinterTest {
         VikiPrintExamples.executeCommandPacket(port, 0x47, 0, 1000);
         Object[] response = VikiPrintExamples.executeCommand(port, 0x31, "2");
         Assertions.assertNotEquals(0, response.length, "Не получен номер ФД");
-        Assertions.assertNotNull(response[3], "Не подучен номер ФД");
-        Assertions.assertNotNull(response[4], "Не подучена ФП");
-        Assertions.assertNotNull(response[5], "Не подучена номер смены");
-        Assertions.assertNotNull(response[6], "Не подучен номер документа в смене");
-        Assertions.assertNotNull(response[7], "Не подучен дата документа");
-        Assertions.assertNotNull(response[8], "Не подучен время документа");
+        Assertions.assertNotNull(response[3], "Не получен номер ФД");
+        Assertions.assertNotNull(response[4], "Не получена ФП");
+        Assertions.assertNotNull(response[5], "Не получена номер смены");
+        Assertions.assertNotNull(response[6], "Не получен номер документа в смене");
+        Assertions.assertNotNull(response[7], "Не получен дата документа");
+        Assertions.assertNotNull(response[8], "Не получен время документа");
         String date = (String) response[7];
         String time = (String) response[8];
         LocalDateTime regDate = LocalDateTime.parse(date + time, DateTimeFormatter.ofPattern("ddMMyyHHmmss"));
