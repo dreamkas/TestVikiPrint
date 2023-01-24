@@ -9,7 +9,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-
 import jssc.SerialPort;
 import jssc.SerialPortException;
 import ru.dreamkas.viki_print.VikiPrintExamples;
@@ -62,14 +61,30 @@ public class PrinterTest {
     @Test
     @DisplayName("Перерегистрация ККТ без замены ФН")
     public void testRegistrationKKT() throws Exception {
+        //Проверим, что смена не закрыта
         Object[] flags = VikiPrintExamples.executeCommand(port, 0x00);
         int status = Integer.parseInt((String) flags[1]);
         if ((status & (1L << 2)) != 0) {
+            //Закроем смену
             VikiPrintExamples.executeCommand(port, 0x21, "Администратор"); // Сформировать отчет о закрытии смены (0x21)
         }
+        int unsentCount;
+        int tryCount = 0;
+        do {
+            //Проверим, что в ФН отсутствуют неотправленные документы в ОДФ
+            Object[] fnInfo = VikiPrintExamples.executeCommand(port, 0x78, 7);
+            unsentCount = Integer.parseInt((String) fnInfo[2]);
+            tryCount++;
+            Assertions.assertFalse(tryCount > 10, "В ФН присутствуют неотправленные документы в ФН (" + unsentCount + " шт.)");
+            if (unsentCount > 0) {
+                Thread.sleep(1000);
+            }
+        } while (unsentCount > 0);
+
         LocalDateTime now = LocalDateTime.now();
         String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
         String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
+        //Выполним перерегистрацию ККТ без замены ФН
         Object[] response = VikiPrintExamples.executeCommand(port, 0x60,
             0,
             "1000000000008261",
@@ -93,6 +108,7 @@ public class PrinterTest {
             4
         ); // Регистрация ККТ
 
+        Assertions.assertNotEquals(0, response.length, "Не получен номер ФД");
         Assertions.assertNotNull(response[0], "Не получен номер ФД");
         Assertions.assertNotNull(response[1], "Не получена ФП");
         date = (String) response[2];
@@ -120,6 +136,7 @@ public class PrinterTest {
         VikiPrintExamples.executeCommandPacket(port, 0x44);
         VikiPrintExamples.executeCommandPacket(port, 0x47, 0, 1000);
         Object[] response = VikiPrintExamples.executeCommand(port, 0x31, "2");
+        Assertions.assertNotEquals(0, response.length, "Не получен номер ФД");
         Assertions.assertNotNull(response[3], "Не подучен номер ФД");
         Assertions.assertNotNull(response[4], "Не подучена ФП");
         Assertions.assertNotNull(response[5], "Не подучена номер смены");
@@ -151,6 +168,7 @@ public class PrinterTest {
         VikiPrintExamples.executeCommand(port, 0x44);
         VikiPrintExamples.executeCommand(port, 0x47, 0, 1000.0);
         Object[] response = VikiPrintExamples.executeCommand(port, 0x31, 2);
+        Assertions.assertNotEquals(0, response.length, "Не получен номер ФД");
         Assertions.assertNotNull(response[3], "Не получен номер ФД");
         Assertions.assertNotNull(response[4], "Не получена ФП");
         Assertions.assertNotNull(response[5], "Не получена номер смены");
