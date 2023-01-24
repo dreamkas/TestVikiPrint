@@ -14,7 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import jssc.SerialPort;
 
 @SuppressWarnings("DuplicatedCode")
-public class VikiPrintExamples {
+public class VikiPrint {
     public static final String COM_PORT = "COM11";
     private static final Pattern LOG_PATTERN = Pattern.compile("\\p{Print}");
     private static final Charset ENCODING = Charset.forName("cp866");
@@ -31,7 +31,7 @@ public class VikiPrintExamples {
         try {
             port.openPort();
             port.purgePort(SerialPort.PURGE_TXCLEAR | SerialPort.PURGE_RXCLEAR);
-            while (port.getInputBufferBytesCount()>0) {
+            while (port.getInputBufferBytesCount() > 0) {
                 port.readBytes();
             }
 
@@ -64,16 +64,16 @@ public class VikiPrintExamples {
                 LocalDateTime now = LocalDateTime.now();
                 String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
                 String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
-                VikiPrintExamples.executeCommand(port, 0x10, date, time); // Начало работы с ККТ (0x10)
+                VikiPrint.executeCommand(port, 0x10, date, time); // Начало работы с ККТ (0x10)
             }
             if ((docStatus & 0x1F) != 0) { // Открыт документ
-                VikiPrintExamples.executeCommand(port, 0x32); // Аннулировать документ (0x32)
+                VikiPrint.executeCommand(port, 0x32); // Аннулировать документ (0x32)
             }
             if ((status & (1L << 2)) == 0) { // Смена не открыта
-                VikiPrintExamples.executeCommand(port, 0x23, "Администратор"); // Открыть смену (0x23)
+                VikiPrint.executeCommand(port, 0x23, "Администратор"); // Открыть смену (0x23)
             } else if ((status & (1L << 3)) != 0) { // 24 часа истекли
-                VikiPrintExamples.executeCommand(port, 0x21, "Администратор"); // Сформировать отчет о закрытии смены (0x21)
-                VikiPrintExamples.executeCommand(port, 0x23, "Администратор"); // Открыть смену (0x23)
+                VikiPrint.executeCommand(port, 0x21, "Администратор"); // Сформировать отчет о закрытии смены (0x21)
+                VikiPrint.executeCommand(port, 0x23, "Администратор"); // Открыть смену (0x23)
             }
             System.out.println();
 
@@ -148,14 +148,17 @@ public class VikiPrintExamples {
         }
     }
 
+    //Синхронная работа
     public static Object[] executeCommand(SerialPort port, int command, Object... parameters) throws Exception {
         return execute(port, command, false, parameters);
     }
 
+    //Пакетная работа
     public static void executeCommandPacket(SerialPort port, int command, Object... parameters) throws Exception {
         execute(port, command, true, parameters);
     }
 
+    //Отправка пакета в порт принтера, получение и разбор ответа
     private static Object[] execute(SerialPort port, int command, boolean packetMode, Object... parameters) throws Exception {
         Object[] result = new Object[0];
 
@@ -192,6 +195,7 @@ public class VikiPrintExamples {
         return result;
     }
 
+    //Разбиение полученных байтов по пакетам
     private static List<byte[]> splitPackets(byte[] response) {
         List<byte[]> result = new ArrayList<>();
         List<Byte> part = new ArrayList<>();
@@ -209,6 +213,7 @@ public class VikiPrintExamples {
         return result;
     }
 
+    //Формирование пакета команды со стороны КП
     private static byte[] makeRequest(int command, Object... parameters) {
         StringBuilder strPacket = new StringBuilder()
             .append(STX)                                    // STX
@@ -231,8 +236,8 @@ public class VikiPrintExamples {
             .getBytes(ENCODING);
     }
 
+    //Парсинг пакета ответа со стороны КП
     private static Object[] parseResponse(byte[] response) throws Exception {
-
         String data = new String(response, ENCODING);
         int packetId = data.charAt(1);                              // ID пакета
         int command = Integer.parseInt(data.substring(2, 4), 16);   // Код команды
@@ -255,6 +260,7 @@ public class VikiPrintExamples {
         return result;
     }
 
+    //Расчет контрольной суммы пакета
     private static int calculateCrc(String string) {
         byte[] rawPacket = string.getBytes(ENCODING);
         int crc = 0;
@@ -264,6 +270,7 @@ public class VikiPrintExamples {
         return crc;
     }
 
+    //Красивая запись данных пакета для логирования
     private static String toString(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (char c : new String(bytes, ENCODING).toCharArray()) {
@@ -276,8 +283,8 @@ public class VikiPrintExamples {
         return sb.toString();
     }
 
+    //Понятное преобразование 16-тиричного представления числа
     private static String toHexString(int value) {
         return StringUtils.leftPad(Integer.toHexString(value & 0xFF).toUpperCase(), 2, '0');
     }
-
 }

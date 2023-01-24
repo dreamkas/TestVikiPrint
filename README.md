@@ -1,4 +1,4 @@
-## Проект VikiPrintExamples
+## Проект VikiPrint
 Реализация базовых команд протокола Пирит на Java
 
 ## Для запуска проекта необходимо:
@@ -21,10 +21,10 @@ Implementation:
 - 'org.apache.commons', name: 'commons-lang3', version: '3.0'
 
 Подключить фискальный принтер через COM или USB порт и
-установить значение константы **COM_PORT** в классе _**VikiPrintExamples**_:
+установить значение константы **COM_PORT** в классе _**VikiPrint**_:
 
-## VikiPrintExamples
-Вызов метода _**main(String[] args)**_ класса _**VikiPrintExamples**_ выполнит базовые команды протокола **[FM16](https://fisgo.pages.dreamkas.ru/pirit_documentation/documentation_fm16_1_2.html#zapros-flagov-statusa-kkt-0x00)**, такие, как:
+## VikiPrint
+Вызов метода _**main(String[] args)**_ класса _**VikiPrint**_ выполнит базовые команды протокола **[FM16](https://fisgo.pages.dreamkas.ru/pirit_documentation/documentation_fm16_1_2.html#zapros-flagov-statusa-kkt-0x00)**, такие, как:
 
 - Проверка связи с ККТ
 - Запрос состояния печатающего устройства
@@ -34,8 +34,8 @@ Implementation:
 - Печать сервисного чека
 
 
-## PrinterTest
-В тестах класса PrinterTest производится выполнение основных команд протокола **[FM16](https://fisgo.pages.dreamkas.ru/pirit_documentation/documentation_fm16_1_2.html#zapros-flagov-statusa-kkt-0x00)**, такие, как:
+## VikiPrintTest
+В тестах класса VikiPrintTest производится выполнение основных команд протокола **[FM16](https://fisgo.pages.dreamkas.ru/pirit_documentation/documentation_fm16_1_2.html#zapros-flagov-statusa-kkt-0x00)**, такие, как:
 - Закрытие / открытие кассовой смены
 - Перерегистрация ККТ без замены ФН
 - Продажа товара в пакетном режиме 
