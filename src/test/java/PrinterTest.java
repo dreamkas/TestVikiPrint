@@ -106,7 +106,7 @@ public class PrinterTest {
     }
 
     @Test
-    @DisplayName("Формирование чека в синхронном режиме")
+    @DisplayName("Формирование чека в пакетном режиме")
     public void testPurchaseInPacketMode() throws Exception {
         // Запрос проверки КМ в ФН
         VikiPrintExamples.executeCommand(port, 0x79, 3);
@@ -138,7 +138,7 @@ public class PrinterTest {
     }
 
     @Test
-    @DisplayName("Формирование чека в пакетном режиме")
+    @DisplayName("Формирование чека в синхронном режиме")
     public void testPurchaseInRegularMode() throws Exception {
         // Запрос проверки КМ в ФН
         VikiPrintExamples.executeCommand(port, 0x79, 3);
