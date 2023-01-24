@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import jssc.SerialPort;
@@ -51,20 +52,29 @@ public class VikiPrintExamples {
             System.out.printf("Время: %s%n", responseData[1]);
             System.out.println();
 
-            System.out.println("Начало работы");
-            LocalDateTime now = LocalDateTime.now();
-            String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
-            String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
-            responseData = executeCommand(port, 0x10, date, time);
-            System.out.printf("Ошибка при сверке даты: %s%n", responseData[0].equals(0x0B));
-            System.out.printf("Ошибка при сверке даты: %s%n", responseData[0].equals(0x0C));
-            System.out.println();
-
             System.out.println("Запрос флагов статуса ККТ");
             responseData = executeCommand(port, 0x00);
-            System.out.printf("Статус фатального состояния ККТ: %s%n", responseData[0]);
-            System.out.printf("Статус текущих флагов ККТ: %s%n", responseData[1]);
-            System.out.printf("Статус документа: %s%n", responseData[2]);
+            int fatalStatus = Integer.parseInt((String) responseData[0]);
+            int status = Integer.parseInt((String) responseData[1]);
+            int docStatus = Integer.parseInt((String) responseData[2]);
+            System.out.printf("Статус фатального состояния ККТ: %s%n", fatalStatus);
+            System.out.printf("Статус текущих флагов ККТ: %s%n", status);
+            System.out.printf("Статус документа: %s%n", docStatus);
+            if ((status & (1L)) != 0) { // Не выполнена команда “Начало работы”
+                LocalDateTime now = LocalDateTime.now();
+                String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
+                String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
+                VikiPrintExamples.executeCommand(port, 0x10, date, time); // Начало работы с ККТ (0x10)
+            }
+            if ((docStatus & 0x1F) != 0) { // Открыт документ
+                VikiPrintExamples.executeCommand(port, 0x32); // Аннулировать документ (0x32)
+            }
+            if ((status & (1L << 2)) == 0) { // Смена не открыта
+                VikiPrintExamples.executeCommand(port, 0x23, "Администратор"); // Открыть смену (0x23)
+            } else if ((status & (1L << 3)) != 0) { // 24 часа истекли
+                VikiPrintExamples.executeCommand(port, 0x21, "Администратор"); // Сформировать отчет о закрытии смены (0x21)
+                VikiPrintExamples.executeCommand(port, 0x23, "Администратор"); // Открыть смену (0x23)
+            }
             System.out.println();
 
             System.out.println("Запрос сведений о ККТ");
@@ -128,12 +138,14 @@ public class VikiPrintExamples {
         while (port.getInputBufferBytesCount() <= 0) {
             Thread.yield();
         }
-        byte[] response = port.readBytes();
-        System.out.printf("<== %s%n", toString(response));
-        if (response[0] != ACK) {
-            throw new Exception("Wrong ACK");
+        byte[] bytes = port.readBytes();
+        System.out.printf("<~~ %s%n", toString(bytes));
+        for (byte[] response : splitPackets(bytes)) {
+            System.out.printf("<== %s%n", toString(response));
+            if (response[0] != ACK) {
+                parseResponse(response);
+            }
         }
-        LocalDateTime now = LocalDateTime.now();
     }
 
     public static Object[] executeCommand(SerialPort port, int command, Object... parameters) throws Exception {
@@ -159,9 +171,9 @@ public class VikiPrintExamples {
             while (port.getInputBufferBytesCount() <= 0) {
                 Thread.yield();
             }
-            byte[] responses = port.readBytes();
-            List<byte[]> packets = splitPackets(responses);
-            for (byte[] response : packets) {
+            byte[] bytes = port.readBytes();
+            System.out.printf("<~~ %s%n", toString(bytes));
+            for (byte[] response : splitPackets(bytes)) {
                 System.out.printf("<== %s%n", toString(response));
                 Object[] responseData = parseResponse(response);
                 responsePacketId = (int) responseData[0];
@@ -181,7 +193,6 @@ public class VikiPrintExamples {
     }
 
     private static List<byte[]> splitPackets(byte[] response) {
-        System.out.printf("<~~ %s%n", toString(response));
         List<byte[]> result = new ArrayList<>();
         List<Byte> part = new ArrayList<>();
         part.add(response[0]);
@@ -190,11 +201,7 @@ public class VikiPrintExamples {
                 part.add(response[i]);
             }
             if (response[i] == STX || i == response.length - 1) {
-                byte[] bytes = new byte[part.size()];
-                for (int e = 0; e < part.size(); e++) {
-                    bytes[e] = part.get(e);
-                }
-                result.add(bytes);
+                result.add(ArrayUtils.toPrimitive(part.toArray(new Byte[0])));
                 part.clear();
                 part.add(response[i]);
             }

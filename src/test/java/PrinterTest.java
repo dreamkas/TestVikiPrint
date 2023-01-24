@@ -24,7 +24,6 @@ public class PrinterTest {
         while (port.getInputBufferBytesCount()>0) {
             port.readBytes();
         }
-
         VikiPrintExamples.checkConnection(port);
     }
 
@@ -33,12 +32,18 @@ public class PrinterTest {
         Object[] flags = VikiPrintExamples.executeCommand(port, 0x00);
         int status = Integer.parseInt((String) flags[1]);
         int docStatus = Integer.parseInt((String) flags[2]);
-        if ((docStatus & 0x1F) != 0) {
-            VikiPrintExamples.executeCommand(port, 0x32); // Открыть смену (0x23)
+        if ((status & (1L)) != 0) { // Не выполнена команда “Начало работы”
+            LocalDateTime now = LocalDateTime.now();
+            String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
+            String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
+            VikiPrintExamples.executeCommand(port, 0x10, date, time); // Начало работы с ККТ (0x10)
         }
-        if ((status & (1L << 2)) == 0) {
+        if ((docStatus & 0x1F) != 0) { // Открыт документ
+            VikiPrintExamples.executeCommand(port, 0x32); // Аннулировать документ (0x32)
+        }
+        if ((status & (1L << 2)) == 0) { // Смена не открыта
             VikiPrintExamples.executeCommand(port, 0x23, "Администратор"); // Открыть смену (0x23)
-        } else if ((status & (1L << 3)) != 0) {
+        } else if ((status & (1L << 3)) != 0) { // 24 часа истекли
             VikiPrintExamples.executeCommand(port, 0x21, "Администратор"); // Сформировать отчет о закрытии смены (0x21)
             VikiPrintExamples.executeCommand(port, 0x23, "Администратор"); // Открыть смену (0x23)
         }
