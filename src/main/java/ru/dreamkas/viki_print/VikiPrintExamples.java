@@ -1,6 +1,8 @@
 package ru.dreamkas.viki_print;
 
 import java.nio.charset.Charset;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -47,6 +49,15 @@ public class VikiPrintExamples {
             responseData = executeCommand(port, 0x13);
             System.out.printf("Дата: %s%n", responseData[0]);
             System.out.printf("Время: %s%n", responseData[1]);
+            System.out.println();
+
+            System.out.println("Начало работы");
+            LocalDateTime now = LocalDateTime.now();
+            String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
+            String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
+            responseData = executeCommand(port, 0x10, date, time);
+            System.out.printf("Ошибка при сверке даты: %s%n", responseData[0].equals(0x0B));
+            System.out.printf("Ошибка при сверке даты: %s%n", responseData[0].equals(0x0C));
             System.out.println();
 
             System.out.println("Запрос флагов статуса ККТ");
@@ -122,6 +133,7 @@ public class VikiPrintExamples {
         if (response[0] != ACK) {
             throw new Exception("Wrong ACK");
         }
+        LocalDateTime now = LocalDateTime.now();
     }
 
     public static Object[] executeCommand(SerialPort port, int command, Object... parameters) throws Exception {
@@ -260,4 +272,5 @@ public class VikiPrintExamples {
     private static String toHexString(int value) {
         return StringUtils.leftPad(Integer.toHexString(value & 0xFF).toUpperCase(), 2, '0');
     }
+
 }
