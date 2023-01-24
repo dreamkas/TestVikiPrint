@@ -20,6 +20,11 @@ public class PrinterTest {
     public static void setup() throws Exception {
         port = new SerialPort(VikiPrintExamples.COM_PORT);
         port.openPort();
+        port.purgePort(SerialPort.PURGE_TXCLEAR | SerialPort.PURGE_RXCLEAR);
+        while (port.getInputBufferBytesCount()>0) {
+            port.readBytes();
+        }
+
         VikiPrintExamples.checkConnection(port);
     }
 

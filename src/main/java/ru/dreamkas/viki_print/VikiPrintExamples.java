@@ -28,6 +28,9 @@ public class VikiPrintExamples {
         try {
             port.openPort();
             port.purgePort(SerialPort.PURGE_TXCLEAR | SerialPort.PURGE_RXCLEAR);
+            while (port.getInputBufferBytesCount()>0) {
+                port.readBytes();
+            }
 
             System.out.println("Проверка связи с ККТ");
             checkConnection(port);
@@ -166,21 +169,21 @@ public class VikiPrintExamples {
     }
 
     private static List<byte[]> splitPackets(byte[] response) {
+        System.out.printf("<~~ %s%n", toString(response));
         List<byte[]> result = new ArrayList<>();
         List<Byte> part = new ArrayList<>();
         part.add(response[0]);
         for (int i = 1; i < response.length; i++) {
+            if (response[i] != STX) {
+                part.add(response[i]);
+            }
             if (response[i] == STX || i == response.length - 1) {
-                if (i == response.length - 1) {
-                    part.add(response[i]);
-                }
                 byte[] bytes = new byte[part.size()];
                 for (int e = 0; e < part.size(); e++) {
                     bytes[e] = part.get(e);
                 }
                 result.add(bytes);
                 part.clear();
-            } else {
                 part.add(response[i]);
             }
         }
@@ -210,12 +213,12 @@ public class VikiPrintExamples {
     }
 
     private static Object[] parseResponse(byte[] response) throws Exception {
+
         String data = new String(response, ENCODING);
         int packetId = data.charAt(1);                              // ID пакета
         int command = Integer.parseInt(data.substring(2, 4), 16);   // Код команды
         int errorCode = Integer.parseInt(data.substring(4, 6), 16); // Код ошибки
         String dataPart = data.substring(6, data.indexOf(ETX));     // Данные
-
         String dataForCRCPart = data.substring(0, data.indexOf(ETX) + 1);
         String crcPart = data.substring(data.indexOf(ETX) + 1);
         int crc = Integer.parseInt(crcPart, 16);
