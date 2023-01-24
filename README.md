@@ -9,7 +9,7 @@ git clone https://gitlab.dreamkas.ru/viki/test-pirit
 
 Рекомендуемая версия JDK для работы с данным проектом - [1.8.0_201](https://126008.selcdn.ru/setstart/jdk1.8.0_201.zip)
 
-Далее можно открыть в IDE (например InteliJ Idea) как Gradle проект указав файл **build.gradle**
+Далее можно открыть в IDE (например IntelliJ Idea) как Gradle проект указав файл **build.gradle**
 
 В проекте задействованы библиотеки:</br>
 Tests:
@@ -20,7 +20,7 @@ Implementation:
 - 'org.scream3r', name: 'jssc', version: '2.8.0'
 - 'org.apache.commons', name: 'commons-lang3', version: '3.0'
 
-Подключить фискальный принтер через COM или USB порту и
+Подключить фискальный принтер через COM или USB порт и
 установить значение константы **COM_PORT** в классе _**VikiPrintExamples**_:
 
 ## VikiPrintExamples
