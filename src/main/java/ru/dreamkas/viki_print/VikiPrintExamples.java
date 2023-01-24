@@ -1,7 +1,9 @@
 package ru.dreamkas.viki_print;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
@@ -67,7 +69,7 @@ public class VikiPrintExamples {
             System.out.println("Продажа штучного и весового товара (Обычный режим формирования документа)");
             executeCommand(port, 0x30, 2, 1, "Петров", "", 0, "");
             executeCommand(port, 0x42, "Сахар", "", 1, 100, 4, "", "", "");
-            executeCommandPacket(port, 0x42,"Сахар","","1.111","100","4","", "", "","11");
+            executeCommandPacket(port, 0x42, "Сахар", "", "1.111", "100", "4", "", "", "", "11");
             executeCommand(port, 0x44);
             executeCommand(port, 0x47, 0, 1000);
             responseData = executeCommand(port, 0x31, 2);
@@ -82,7 +84,7 @@ public class VikiPrintExamples {
             System.out.println("Продажа штучного и весового товара (Пакетный режим формирования документа)");
             executeCommandPacket(port, 0x30, 2 | 16, 1, "Петров", "", 0, "");
             executeCommandPacket(port, 0x42, "Сахар", "", 1, 100, 4, "", "", "");
-            executeCommandPacket(port, 0x42,"Сахар","","1.111","100","4","", "", "","11");
+            executeCommandPacket(port, 0x42, "Сахар", "", "1.111", "100", "4", "", "", "", "11");
             executeCommandPacket(port, 0x44);
             executeCommandPacket(port, 0x47, 0, 1000);
             responseData = executeCommand(port, 0x31, 2);
@@ -142,21 +144,45 @@ public class VikiPrintExamples {
             while (port.getInputBufferBytesCount() <= 0) {
                 Thread.yield();
             }
-            byte[] response = port.readBytes();
-            System.out.printf("<== %s%n", toString(response));
-            Object[] responseData = parseResponse(response);
-
-            responsePacketId = (int) responseData[0];
-            int errorCode = (int) responseData[2];
-            if (errorCode != 0) {
-                if (errorCode == 0x01 || errorCode == 0x03) {
-                    throw new Exception((String) executeCommand(port, 0x06, 1)[2]);
+            byte[] responses = port.readBytes();
+            List<byte[]> packets = splitPackets(responses);
+            for (byte[] response : packets) {
+                System.out.printf("<== %s%n", toString(response));
+                Object[] responseData = parseResponse(response);
+                responsePacketId = (int) responseData[0];
+                int errorCode = (int) responseData[2];
+                if (errorCode != 0) {
+                    if (errorCode == 0x01 || errorCode == 0x03) {
+                        throw new Exception((String) executeCommand(port, 0x06, 1)[2]);
+                    }
+                    throw new Exception(String.format("Ошибка 0x%s", toHexString(errorCode)));
                 }
-                throw new Exception(String.format("Ошибка 0x%s", toHexString(errorCode)));
-            }
 
-            result = new Object[responseData.length-4];
-            System.arraycopy(responseData, 3, result, 0, responseData.length - 4);
+                result = new Object[responseData.length - 4];
+                System.arraycopy(responseData, 3, result, 0, responseData.length - 4);
+            }
+        }
+        return result;
+    }
+
+    private static List<byte[]> splitPackets(byte[] response) {
+        List<byte[]> result = new ArrayList<>();
+        List<Byte> part = new ArrayList<>();
+        part.add(response[0]);
+        for (int i = 1; i < response.length; i++) {
+            if (response[i] == STX || i == response.length - 1) {
+                if (i == response.length - 1) {
+                    part.add(response[i]);
+                }
+                byte[] bytes = new byte[part.size()];
+                for (int e = 0; e < part.size(); e++) {
+                    bytes[e] = part.get(e);
+                }
+                result.add(bytes);
+                part.clear();
+            } else {
+                part.add(response[i]);
+            }
         }
         return result;
     }
