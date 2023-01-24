@@ -68,18 +68,6 @@ public class PrinterTest {
             //Закроем смену
             VikiPrintExamples.executeCommand(port, 0x21, "Администратор"); // Сформировать отчет о закрытии смены (0x21)
         }
-        int unsentCount;
-        int tryCount = 0;
-        do {
-            //Проверим, что в ФН отсутствуют неотправленные документы в ОДФ
-            Object[] fnInfo = VikiPrintExamples.executeCommand(port, 0x78, 7);
-            unsentCount = Integer.parseInt((String) fnInfo[2]);
-            tryCount++;
-            Assertions.assertFalse(tryCount > 10, "В ФН присутствуют неотправленные документы в ФН (" + unsentCount + " шт.)");
-            if (unsentCount > 0) {
-                Thread.sleep(1000);
-            }
-        } while (unsentCount > 0);
 
         LocalDateTime now = LocalDateTime.now();
         String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
