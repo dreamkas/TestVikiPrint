@@ -183,8 +183,11 @@ public class VikiPrint {
                 Thread.yield();
             }
             byte[] bytes = port.readBytes();
-            System.out.printf("<~~ %s%n", toString(bytes));
-            for (byte[] response : splitPackets(bytes)) {
+            List<byte[]> splitPackets = splitPackets(bytes);
+            if (splitPackets.size() > 1) {
+                System.out.printf("<~~ %s%n", toString(bytes));
+            }
+            for (byte[] response : splitPackets) {
                 System.out.printf("<== %s%n", toString(response));
                 Object[] responseData = parseResponse(response);
                 responsePacketId = (int) responseData[0];
