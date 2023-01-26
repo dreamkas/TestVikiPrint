@@ -9,14 +9,16 @@ git clone https://github.com/dreamkas/TestVikiPrint.git
 
 Рекомендуемая версия JDK для работы с данным проектом - [1.8.0_201](https://126008.selcdn.ru/setstart/jdk1.8.0_201.zip)
 
-Далее можно открыть в IDE (например IntelliJ Idea) как Gradle проект указав файл **build.gradle**
+Далее можно открыть в IDE как Gradle проект указав файл **build.gradle**<br/>
+**В IntelliJ Idea:<br/>
+File → New → Project from Existing Sources... → <Папка с проектом>/build.gradle**
 
 В проекте задействованы библиотеки:</br>
-Tests:
+**Tests:**
 - 'org.junit.jupiter:junit-jupiter-api:5.8.1'
 - 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
 
-Implementation:
+**Implementation:**
 - 'org.scream3r', name: 'jssc', version: '2.8.0'
 - 'org.apache.commons', name: 'commons-lang3', version: '3.0'
 
@@ -27,6 +29,7 @@ Implementation:
 Вызов метода _**main(String[] args)**_ класса _**VikiPrint**_ выполнит базовые команды протокола **[FM16](https://fisgo.pages.dreamkas.ru/pirit_documentation/documentation_fm16_1_2.html#zapros-flagov-statusa-kkt-0x00)**, такие, как:
 
 - Проверка связи с ККТ
+- Обмен информацией с ФН (для получения версий ФФД)
 - Запрос состояния печатающего устройства
 - Чтение даты/времени ККТ
 - Запрос флагов статуса ККТ
