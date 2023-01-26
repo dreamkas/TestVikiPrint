@@ -107,7 +107,7 @@ public class VikiPrintTest {
             "ofd-receipts@dreamkas.ru",
             "www.nalog.gov.ru",
             maxFFDVersion == 4 ? 2 : 0,
-            maxFFDVersion
+            maxFFDVersion == 4 ? 4 : 2
         ); // Регистрация ККТ
 
         Assertions.assertNotEquals(0, response.length, "Не получен номер ФД");
