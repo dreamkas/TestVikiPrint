@@ -15,6 +15,7 @@ import ru.dreamkas.viki_print.VikiPrint;
 
 public class VikiPrintTest {
     private static SerialPort port;
+    private static int maxFFDVersion;
 
     @BeforeAll
     public static void setup() throws Exception {
@@ -25,6 +26,9 @@ public class VikiPrintTest {
             port.readBytes();
         }
         VikiPrint.checkConnection(port);
+
+        Object[] fnVersions = VikiPrint.executeCommand(port, 0x78, 22);
+        maxFFDVersion = Integer.parseInt((String) fnVersions[2]);
     }
 
     @BeforeEach
@@ -102,8 +106,8 @@ public class VikiPrintTest {
             "7704211201",
             "ofd-receipts@dreamkas.ru",
             "www.nalog.gov.ru",
-            2,
-            4
+            maxFFDVersion == 4 ? 2 : 0,
+            maxFFDVersion
         ); // Регистрация ККТ
 
         Assertions.assertNotEquals(0, response.length, "Не получен номер ФД");
@@ -118,16 +122,26 @@ public class VikiPrintTest {
     @Test
     @DisplayName("Формирование чека в пакетном режиме")
     public void testPurchaseInPacketMode() throws Exception {
-        // Запрос проверки КМ в ФН
-        VikiPrint.executeCommand(port, 0x79, 3);
-        Object[] data = VikiPrint.executeCommand(port, 0x79, 1, "OTc4MDIwMTM3OTYy", 0, 2, 900, 10, 1);
-        int tag2106 = Integer.parseInt((String) data[1]);
+        Object[] fnVersions = VikiPrint.executeCommand(port, 0x78, 22);
+        int ffdVersion = Integer.parseInt((String) fnVersions[1]);
 
-        // Подтверждение добавления КМ в чек
-        VikiPrint.executeCommand(port, 0x79, 2, 1, "", "", "", "", "");
+        int tag2106 = 0;
+        if (ffdVersion == 4) { // Версия ФФД 1.2 поэтому проверяем КМ в ФН
+            // Запрос проверки КМ в ФН
+            VikiPrint.executeCommand(port, 0x79, 3);
+            Object[] data = VikiPrint.executeCommand(port, 0x79, 1, "0103041094787443215CY6tH\u001D93dGVz", 0, 2, 900, 10, 1);
+            tag2106 = Integer.parseInt((String) data[1]);
+
+            // Подтверждение добавления КМ в чек
+            VikiPrint.executeCommand(port, 0x79, 2, 1, "", "", "", "", "");
+        }
 
         VikiPrint.executeCommandPacket(port, 0x30, 2 | 16, 1, "Петров", "", 0, "");
-        VikiPrint.executeCommandPacket(port, 0x79, 15, "OTc4MDIwMTM3OTYy", 2, 0, tag2106, 10, "");
+        if (ffdVersion == 4) { // Версия ФФД 1.2 передаем в ФН
+            VikiPrint.executeCommandPacket(port, 0x79, 15, "0103041094787443215CY6tH\u001D93dGVz", 2, 0, tag2106, 10, "");
+        } else { // Версия ФФД 1.05 передаем в дополнительные реквизиты позиции
+            VikiPrint.executeCommandPacket(port, 0x24, "0103041094787443215CY6tH\u001D93dGVz");
+        }
         VikiPrint.executeCommandPacket(port, 0x42, "Маркированный товар", "", 1, 100, 0, "", "", "", 10, "", 4, 4, "", "", "");
         VikiPrint.executeCommandPacket(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "");
         VikiPrint.executeCommandPacket(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);
@@ -150,16 +164,27 @@ public class VikiPrintTest {
     @Test
     @DisplayName("Формирование чека в синхронном режиме")
     public void testPurchaseInRegularMode() throws Exception {
-        // Запрос проверки КМ в ФН
-        VikiPrint.executeCommand(port, 0x79, 3);
-        Object[] data = VikiPrint.executeCommand(port, 0x79, 1, "OTc4MDIwMTM3OTYy", 0, 2, 900, 10, 1);
-        int tag2106 = Integer.parseInt((String) data[1]);
+        Object[] fnVersions = VikiPrint.executeCommand(port, 0x78, 22);
+        int ffdVersion = Integer.parseInt((String) fnVersions[1]);
 
-        // Подтверждение добавления КМ в чек
-        VikiPrint.executeCommand(port, 0x79, 2, 1, "", "", "", "", "");
+        int tag2106 = 0;
+        if (ffdVersion == 4) { // Версия ФФД 1.2 поэтому проверяем КМ в ФН
+            // Запрос проверки КМ в ФН
+            VikiPrint.executeCommand(port, 0x79, 3);
+            Object[] data = VikiPrint.executeCommand(port, 0x79, 1, "0103041094787443215CY6tH\u001D93dGVz", 0, 2, 900, 10, 1);
+            tag2106 = Integer.parseInt((String) data[1]);
+
+            // Подтверждение добавления КМ в чек
+            VikiPrint.executeCommand(port, 0x79, 2, 1, "", "", "", "", "");
+        }
 
         VikiPrint.executeCommand(port, 0x30, 2, 1, "Петров", "", 0, "");
-        VikiPrint.executeCommand(port, 0x79, 15, "OTc4MDIwMTM3OTYy", 2, 0, tag2106, 10, "");
+        if (ffdVersion == 4) { // Версия ФФД 1.2 передаем в ФН
+            VikiPrint.executeCommand(port, 0x79, 15, "0103041094787443215CY6tH\u001D93dGVz", 2, 0, tag2106, 10, "");
+        } else { // Версия ФФД 1.05 передаем в дополнительные реквизиты позиции
+            VikiPrint.executeCommand(port, 0x24, "0103041094787443215CY6tH\u001D93dGVz");
+        }
+
         VikiPrint.executeCommand(port, 0x42, "Маркированный товар", "", 1, 100, 0, "", "", "", 10, "", 4, 4, "", "", "");
         VikiPrint.executeCommand(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "");
         VikiPrint.executeCommand(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);

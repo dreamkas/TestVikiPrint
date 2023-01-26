@@ -41,6 +41,12 @@ public class VikiPrint {
 
             Object[] responseData;
 
+            System.out.println("Обмен информацией с ФН");
+            responseData = VikiPrint.executeCommand(port, 0x78, 22);
+            System.out.printf("Текущая версия ФФД: %s%n", Integer.parseInt((String) responseData[1]) == 4 ? "1.2" : "1.05");
+            System.out.printf("Максимальная поддерживаемая версия ФФД: %s%n", Integer.parseInt((String) responseData[2]) == 4 ? "1.2" : "1.05");
+            System.out.println();
+
             System.out.println("Запрос состояния печатающего устройства");
             responseData = executeCommand(port, 0x04);
             System.out.printf("Статус печатающего устройства: %s%n", responseData[0]);
@@ -226,7 +232,12 @@ public class VikiPrint {
             strPacket.append(FS);                           //
         } else {                                            //
             for (Object param : parameters) {               //
-                strPacket.append(param).append(FS);         // Данные
+                String value = param.toString();
+                StringBuilder sb = new StringBuilder();
+                for (char c : value.toCharArray()) {
+                    sb.append(c >= 32 ? c : ("$" + String.format("%02X", (int) c)));
+                }
+                strPacket.append(sb).append(FS);         // Данные
             }                                               //
         }                                                   //
         strPacket.append(ETX);                              // ETX
