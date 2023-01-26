@@ -120,12 +120,14 @@ public class VikiPrint {
             System.out.printf("Время документа: %s%n", responseData[8]);
             System.out.println();
 
-//            Закрытие архива ФН
-//            responseData = executeCommand(port, 0x71, "Петров");
-//            System.out.printf("ФД: %s%n", responseData[0]);
-//            System.out.printf("ФП: %s%n", responseData[1]);
-//            System.out.printf("Дата документа: %s%n", responseData[2]);
-//            System.out.printf("Время документа: %s%n", responseData[3]);
+/*
+            Закрытие архива ФН
+            responseData = executeCommand(port, 0x71, "Петров");
+            System.out.printf("ФД: %s%n", responseData[0]);
+            System.out.printf("ФП: %s%n", responseData[1]);
+            System.out.printf("Дата документа: %s%n", responseData[2]);
+            System.out.printf("Время документа: %s%n", responseData[3]);
+*/
 
         } finally {
             port.closePort();
