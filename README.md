@@ -1,11 +1,11 @@
-## Проект VikiPrint
+## Проект TestVikiPrint
 Реализация базовых команд протокола Пирит на Java
 
 ## Для запуска проекта необходимо:
 Для возможности использования проекта в качестве практического инструмента для интеграции кассового ПО
 проект необходимо "клонировать" в среде разработки или через GitBash командой:
 
-git clone https://gitlab.dreamkas.ru/viki/test-pirit
+git clone https://github.com/dreamkas/TestVikiPrint.git
 
 Рекомендуемая версия JDK для работы с данным проектом - [1.8.0_201](https://126008.selcdn.ru/setstart/jdk1.8.0_201.zip)
 
