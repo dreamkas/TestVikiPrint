@@ -17,10 +17,6 @@ public class VikiPrintTest {
     private static SerialPort port;
     private static int maxFFDVersion;
 
-    public static Integer checkNum;
-    private static Integer FDNum;
-    private static Integer km;
-
     @BeforeAll
     public static void setup() throws Exception {
         port = new SerialPort(VikiPrint.COM_PORT);
@@ -159,9 +155,6 @@ public class VikiPrintTest {
         Assertions.assertNotNull(response[6], "Не получен номер документа в смене");
         Assertions.assertNotNull(response[7], "Не получен дата документа");
         Assertions.assertNotNull(response[8], "Не получен время документа");
-        FDNum = Integer.valueOf((String) response[3]);
-        checkNum = Integer.valueOf((String) response[6]);
-        km = tag2106;
         String date = (String) response[7];
         String time = (String) response[8];
         LocalDateTime regDate = LocalDateTime.parse(date + time, DateTimeFormatter.ofPattern("ddMMyyHHmmss"));
@@ -218,14 +211,25 @@ public class VikiPrintTest {
         String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
         String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
 
+        // Пробитие чека
+        VikiPrint.executeCommand(port, 0x30, 2, 1, "Петров", "", 0, "");
+        VikiPrint.executeCommand(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "");
+        VikiPrint.executeCommandPacket(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);
+        VikiPrint.executeCommand(port, 0x44);
+        VikiPrint.executeCommand(port, 0x47, 0, 1000);
+        Object[] response = VikiPrint.executeCommand(port, 0x31, 2);
+
+        // Получение номера чека и номера ФД
+        Integer checkNum = Integer.valueOf((String) response[3]);
+        Integer FDNum = Integer.valueOf((String) response[6]);
+
+        // Формирование копии чека
         VikiPrint.executeCommandPacket(port, 0x53, 2 , 1, "Петров", checkNum, 4, date, time, FDNum);
-        VikiPrint.executeCommand(port, 0x79, 15, "OTc4MDIwMTM3OTYy", 2, 0, km, 10, "");
-        VikiPrint.executeCommand(port, 0x42, "Маркированный товар", "", 1, 100, 0, "", "", "", 10, "", 4, 4, "", "", "");
         VikiPrint.executeCommandPacket(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "");
         VikiPrint.executeCommandPacket(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);
-
         VikiPrint.executeCommandPacket(port, 0x44);
         VikiPrint.executeCommandPacket(port, 0x47, 0, 1000);
-        VikiPrint.executeCommand(port, 0x31, "2");
+        response = VikiPrint.executeCommand(port, 0x31, 2);
+        Assertions.assertEquals(2, response.length, "Получены лишние данные из копии чека");
     }
 }
