@@ -1,5 +1,4 @@
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
 import org.junit.jupiter.api.AfterAll;
@@ -10,25 +9,30 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import jssc.SerialPort;
-import jssc.SerialPortException;
 import ru.dreamkas.viki_print.VikiPrint;
+
+import static ru.dreamkas.viki_print.VikiPrint.DATE_FORMATTER;
+import static ru.dreamkas.viki_print.VikiPrint.DATE_TIME_FORMATTER;
+import static ru.dreamkas.viki_print.VikiPrint.TIME_FORMATTER;
 
 public class VikiPrintTest {
     private static SerialPort port;
     private static int maxFFDVersion;
+    private static final boolean PRINT = false;
 
     @BeforeAll
     public static void setup() throws Exception {
         port = new SerialPort(VikiPrint.COM_PORT);
         port.openPort();
         port.purgePort(SerialPort.PURGE_TXCLEAR | SerialPort.PURGE_RXCLEAR);
-        while (port.getInputBufferBytesCount()>0) {
+        while (port.getInputBufferBytesCount() > 0) {
             port.readBytes();
         }
         VikiPrint.checkConnection(port);
 
         Object[] fnVersions = VikiPrint.executeCommand(port, 0x78, 22);
         maxFFDVersion = Integer.parseInt((String) fnVersions[2]);
+        setPrintDocuments(PRINT);
     }
 
     @BeforeEach
@@ -38,8 +42,8 @@ public class VikiPrintTest {
         int docStatus = Integer.parseInt((String) flags[2]);
         if ((status & (1L)) != 0) { // Не выполнена команда “Начало работы”
             LocalDateTime now = LocalDateTime.now();
-            String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
-            String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
+            String date = now.format(DATE_FORMATTER);
+            String time = now.format(TIME_FORMATTER);
             VikiPrint.executeCommand(port, 0x10, date, time); // Начало работы с ККТ (0x10)
         }
         if ((docStatus & 0x1F) != 0) { // Открыт документ
@@ -54,8 +58,20 @@ public class VikiPrintTest {
     }
 
     @AfterAll
-    public static void finalisation() throws SerialPortException {
+    public static void finalisation() throws Exception {
+        setPrintDocuments(!PRINT);
         port.closePort();
+    }
+
+    private static void setPrintDocuments(boolean print) throws Exception {
+        Object[] tableData = VikiPrint.executeCommand(port, 0x11, 1, 0);
+        int value = Integer.parseInt((String) tableData[0]);
+        if (print) {
+            value &= (~(1 << 7));
+        } else {
+            value |= (1 << 7);
+        }
+        VikiPrint.executeCommand(port, 0x12, 1, 0, value);
     }
 
     @Test
@@ -84,8 +100,8 @@ public class VikiPrintTest {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
-        String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
+        String date = now.format(DATE_FORMATTER);
+        String time = now.format(TIME_FORMATTER);
         //Выполним перерегистрацию ККТ без замены ФН
         Object[] response = VikiPrint.executeCommand(port, 0x60,
             0,
@@ -115,7 +131,7 @@ public class VikiPrintTest {
         Assertions.assertNotNull(response[1], "Не получена ФП");
         date = (String) response[2];
         time = (String) response[3];
-        LocalDateTime regDate = LocalDateTime.parse(date + time, DateTimeFormatter.ofPattern("ddMMyyHHmmss"));
+        LocalDateTime regDate = LocalDateTime.parse(date + time, DATE_TIME_FORMATTER);
         Assertions.assertTrue(ChronoUnit.MINUTES.between(regDate, LocalDateTime.now()) < 5);
     }
 
@@ -157,7 +173,7 @@ public class VikiPrintTest {
         Assertions.assertNotNull(response[8], "Не получен время документа");
         String date = (String) response[7];
         String time = (String) response[8];
-        LocalDateTime regDate = LocalDateTime.parse(date + time, DateTimeFormatter.ofPattern("ddMMyyHHmmss"));
+        LocalDateTime regDate = LocalDateTime.parse(date + time, DATE_TIME_FORMATTER);
         Assertions.assertTrue(ChronoUnit.MINUTES.between(regDate, LocalDateTime.now()) < 5);
     }
 
@@ -200,7 +216,7 @@ public class VikiPrintTest {
         Assertions.assertNotNull(response[8], "Не получен время документа");
         String date = (String) response[7];
         String time = (String) response[8];
-        LocalDateTime regDate = LocalDateTime.parse(date + time, DateTimeFormatter.ofPattern("ddMMyyHHmmss"));
+        LocalDateTime regDate = LocalDateTime.parse(date + time, DATE_TIME_FORMATTER);
         Assertions.assertTrue(ChronoUnit.MINUTES.between(regDate, LocalDateTime.now()) < 5);
     }
 
@@ -208,28 +224,28 @@ public class VikiPrintTest {
     @DisplayName("Формирование копии чека в пакетном режиме")
     public void testCopyOfCheckInPacketMode() throws Exception {
         LocalDateTime now = LocalDateTime.now();
-        String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
-        String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
+        String date = now.format(DATE_FORMATTER);
+        String time = now.format(TIME_FORMATTER);
 
         // Пробитие чека
-        VikiPrint.executeCommand(port, 0x30, 2, 1, "Петров", "", 0, "");
-        VikiPrint.executeCommand(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "");
-        VikiPrint.executeCommandPacket(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);
-        VikiPrint.executeCommand(port, 0x44);
-        VikiPrint.executeCommand(port, 0x47, 0, 1000);
-        Object[] response = VikiPrint.executeCommand(port, 0x31, 2);
-
-        // Получение номера чека и номера ФД
-        Integer checkNum = Integer.valueOf((String) response[3]);
-        Integer FDNum = Integer.valueOf((String) response[6]);
-
-        // Формирование копии чека
-        VikiPrint.executeCommandPacket(port, 0x53, 2 , 1, "Петров", checkNum, 4, date, time, FDNum);
+        VikiPrint.executeCommandPacket(port, 0x30, 2 | 16, 1, "Петров", "", 0, "");
         VikiPrint.executeCommandPacket(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "");
         VikiPrint.executeCommandPacket(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);
         VikiPrint.executeCommandPacket(port, 0x44);
         VikiPrint.executeCommandPacket(port, 0x47, 0, 1000);
-        response = VikiPrint.executeCommand(port, 0x31, 2);
+        Object[] response = VikiPrint.executeCommand(port, 0x31, 2, "customer@mail.ru");
+
+        // Получение номера чека и номера ФД
+        Integer fdNum = Integer.valueOf((String) response[3]);
+        Integer checkNum = Integer.valueOf((String) response[6]);
+
+        // Формирование копии чека
+        VikiPrint.executeCommandPacket(port, 0x53, 2 | 16, 1, "Петров", checkNum, 4, date, time, fdNum, 0);
+        VikiPrint.executeCommandPacket(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "");
+        VikiPrint.executeCommandPacket(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);
+        VikiPrint.executeCommandPacket(port, 0x44);
+        VikiPrint.executeCommandPacket(port, 0x47, 0, 1000);
+        response = VikiPrint.executeCommand(port, 0x31, 2, "customer@mail.ru");
         Assertions.assertEquals(2, response.length, "Получены лишние данные из копии чека");
     }
 }

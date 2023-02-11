@@ -18,6 +18,9 @@ public class VikiPrint {
     public static final String COM_PORT = "COM11";
     private static final Pattern LOG_PATTERN = Pattern.compile("\\p{Print}");
     private static final Charset ENCODING = Charset.forName("cp866");
+    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("ddMMyy");
+    public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HHmmss");
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("ddMMyyHHmmss");
     private static final byte ENQ = 0x05;
     private static final byte ACK = 0x06;
     private static final char STX = 0x02;
@@ -68,8 +71,8 @@ public class VikiPrint {
             System.out.printf("Статус документа: %s%n", docStatus);
             if ((status & (1L)) != 0) { // Не выполнена команда “Начало работы”
                 LocalDateTime now = LocalDateTime.now();
-                String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
-                String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
+                String date = now.format(DATE_FORMATTER);
+                String time = now.format(TIME_FORMATTER);
                 VikiPrint.executeCommand(port, 0x10, date, time); // Начало работы с ККТ (0x10)
             }
             if ((docStatus & 0x1F) != 0) { // Открыт документ
