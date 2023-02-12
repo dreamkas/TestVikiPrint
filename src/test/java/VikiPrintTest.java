@@ -138,8 +138,8 @@ public class VikiPrintTest {
     @Test
     @DisplayName("Формирование чека в пакетном режиме")
     public void testPurchaseInPacketMode() throws Exception {
-        Object[] fnVersions = VikiPrint.executeCommand(port, 0x78, 22);
-        int ffdVersion = Integer.parseInt((String) fnVersions[1]);
+        Object[] fnVersions = VikiPrint.executeCommand(port, 0x78, 14);
+        int ffdVersion = Integer.parseInt((String) fnVersions[3]); // 2 = ФФД 1.05; 4 = ФФД 1.2
 
         int tag2106 = 0;
         if (ffdVersion == 4) { // Версия ФФД 1.2 поэтому проверяем КМ в ФН
@@ -158,9 +158,9 @@ public class VikiPrintTest {
         } else { // Версия ФФД 1.05 передаем в дополнительные реквизиты позиции
             VikiPrint.executeCommandPacket(port, 0x24, "0103041094787443215CY6tH\u001D93dGVz");
         }
-        VikiPrint.executeCommandPacket(port, 0x42, "Маркированный товар", "", 1, 100, 0, "", "", "", 10, "", 4, 4, "", "", "");
-        VikiPrint.executeCommandPacket(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "");
-        VikiPrint.executeCommandPacket(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);
+        VikiPrint.executeCommandPacket(port, 0x42, "Маркированный товар", "", 1, 100.0, 0, "", "", "", (ffdVersion == 4 ? 0 : "шт"), "", 4, (ffdVersion == 4 ? 33 : 1), "", "", "");
+        VikiPrint.executeCommandPacket(port, 0x42, "Штучный товар", "", 1, 100.0, 4, "", "", "", (ffdVersion == 4 ? 0 : "шт"));
+        VikiPrint.executeCommandPacket(port, 0x42, "Весовой товар", "", 1.111, 100.0, 4, "", "", "", (ffdVersion == 4 ? 11 : "кг"));
         VikiPrint.executeCommandPacket(port, 0x44);
         VikiPrint.executeCommandPacket(port, 0x47, 0, 1000);
         Object[] response = VikiPrint.executeCommand(port, 0x31, "2");
@@ -180,8 +180,8 @@ public class VikiPrintTest {
     @Test
     @DisplayName("Формирование чека в синхронном режиме")
     public void testPurchaseInRegularMode() throws Exception {
-        Object[] fnVersions = VikiPrint.executeCommand(port, 0x78, 22);
-        int ffdVersion = Integer.parseInt((String) fnVersions[1]);
+        Object[] fnVersions = VikiPrint.executeCommand(port, 0x78, 14);
+        int ffdVersion = Integer.parseInt((String) fnVersions[3]); // 2 = ФФД 1.05; 4 = ФФД 1.2
 
         int tag2106 = 0;
         if (ffdVersion == 4) { // Версия ФФД 1.2 поэтому проверяем КМ в ФН
@@ -200,10 +200,9 @@ public class VikiPrintTest {
         } else { // Версия ФФД 1.05 передаем в дополнительные реквизиты позиции
             VikiPrint.executeCommand(port, 0x24, "0103041094787443215CY6tH\u001D93dGVz");
         }
-
-        VikiPrint.executeCommand(port, 0x42, "Маркированный товар", "", 1, 100, 0, "", "", "", 10, "", 4, 4, "", "", "");
-        VikiPrint.executeCommand(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "");
-        VikiPrint.executeCommand(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);
+        VikiPrint.executeCommand(port, 0x42, "Маркированный товар", "", 1, 100.0, 0, "", "", "", (ffdVersion == 4 ? 0 : "шт"), "", 4, (ffdVersion == 4 ? 33 : 1), "", "", "");
+        VikiPrint.executeCommand(port, 0x42, "Штучный товар", "", 1, 100.0, 4, "", "", "", (ffdVersion == 4 ? 0 : "шт"));
+        VikiPrint.executeCommand(port, 0x42, "Весовой товар", "", 1.111, 100.0, 4, "", "", "", (ffdVersion == 4 ? 11 : "кг"));
         VikiPrint.executeCommand(port, 0x44);
         VikiPrint.executeCommand(port, 0x47, 0, 1000.0);
         Object[] response = VikiPrint.executeCommand(port, 0x31, 2);
@@ -223,29 +222,107 @@ public class VikiPrintTest {
     @Test
     @DisplayName("Формирование копии чека в пакетном режиме")
     public void testCopyOfCheckInPacketMode() throws Exception {
-        LocalDateTime now = LocalDateTime.now();
-        String date = now.format(DATE_FORMATTER);
-        String time = now.format(TIME_FORMATTER);
+        Object[] fnVersions = VikiPrint.executeCommand(port, 0x78, 14);
+        int ffdVersion = Integer.parseInt((String) fnVersions[3]); // 2 = ФФД 1.05; 4 = ФФД 1.2
 
-        // Регистрация чека
-        VikiPrint.executeCommandPacket(port, 0x30, 2 | 16, 1, "Петров", "", 0, "");
-        VikiPrint.executeCommandPacket(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "");
-        VikiPrint.executeCommandPacket(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);
-        VikiPrint.executeCommandPacket(port, 0x44);
-        VikiPrint.executeCommandPacket(port, 0x47, 0, 1000);
-        Object[] response = VikiPrint.executeCommand(port, 0x31, 2, "customer@mail.ru");
-
+        // Регистрация чека в пакетном режиме
+        VikiPrint.executeCommandPacket(port, 0x30, // Открыть документ
+            2 | 16,	  // (Целое число) Режим и тип документа
+            1,        // (Целое число 1..99) Номер отдела
+            "Петров", // (Имя оператора) Имя оператора
+            "",       // (Целое число) Номер документа
+            0,        // (Число 0..5) Система налогообложения (Тег 1055)
+            ""        // (Строка) Адрес пользователя (Тег 1009)
+        );
+        VikiPrint.executeCommandPacket(port, 0x42, // Добавить товарную позицию
+            "Штучный товар", // (Строка[0...256]) Название товара
+            "",              // (Строка[0..18]) Артикул товара/номер ТРК
+            1,               // (Дробное число) Количество товара в товарной позиции
+            100,             // (Дробное число[0..99999999.99]) Цена товара по данному артикулу
+            4,               // (Целое число) Номер ставки налога
+            "",              // (Строка[0..4]) Номер товарной позиции
+            "",              // (Целое число 1..16) Номер секции
+            "",              // (Целое число) Тип скидки/наценки
+            (ffdVersion == 4 ? 0 : "шт"), // (Строка[0..38] или Целое число[0..255]) Единица измерения (Тег 2108), используется, начиная с версий 565.1.6, 665.4.6 и 570.30.0
+            0,               // (Дробное число) Сумма скидки
+            4,               // (Целое число) Признак способа расчета (Тег 1214)
+            1,               // (Целое число) Признак предмета расчета (Тег 1212)
+            "",              // (Строка[3]) Код страны происхождения товара (Тег 1230)
+            "",              // (Строка[0...32]) Номер таможенной декларации (Тег 1231)
+            0                // (Дробное число) Сумма акциза (Тег 1229)
+        );
+        VikiPrint.executeCommandPacket(port, 0x42, // Добавить товарную позицию
+            "Весовой товар", // (Строка[0...256]) Название товара
+            "",              // (Строка[0..18]) Артикул товара/номер ТРК
+            1.111,           // (Дробное число) Количество товара в товарной позиции
+            100,             // (Дробное число[0..99999999.99]) Цена товара по данному артикулу
+            4,               // (Целое число) Номер ставки налога
+            "",              // (Строка[0..4]) Номер товарной позиции
+            "",              // (Целое число 1..16) Номер секции
+            "",              // (Целое число) Тип скидки/наценки
+            (ffdVersion == 4 ? 11 : "кг"), // (Строка[0..38] или Целое число[0..255]) Единица измерения (Тег 2108), используется, начиная с версий 565.1.6, 665.4.6 и 570.30.0
+            0,               // (Дробное число) Сумма скидки
+            4,               // (Целое число) Признак способа расчета (Тег 1214)
+            1,               // (Целое число) Признак предмета расчета (Тег 1212)
+            "",              // (Строка[3]) Код страны происхождения товара (Тег 1230)
+            "",              // (Строка[0...32]) Номер таможенной декларации (Тег 1231)
+            0                // (Дробное число) Сумма акциза (Тег 1229)
+        );
+        VikiPrint.executeCommandPacket(port, 0x44); // Подытог
+        VikiPrint.executeCommandPacket(port, 0x47, // Оплата
+            0,    // (Целое число 0..15) Код типа платежа
+            1000, // (Дробное число) Сумма, принятая от покупателя по данному платежу
+            ""    //(Строка[0..44]) Дополнительный текст
+        );
+        Object[] response = VikiPrint.executeCommand(port, 0x31, // Завершить документ
+            2,                  // (Целое число) Флаг отрезки
+            "customer@mail.ru", // (Строка)[0..256] Адрес покупателя (Тег 1008)
+            0,                  // (Число) Разные флаги
+            "",                 // (Строка) Место расчётов (Тег 1187)
+            "",                 // (Строка) Адрес отправителя чеков (Тег 1117)
+            "",                 // (Строка) Номер автомата (Тег 1036)
+            "",                 // (Строка) Наименование дополнительного реквизита пользователя (Тег 1085)
+            "",                 // (Строка) Значение дополнительного реквизита пользователя (Тег 1086)
+            "",                 // (Строка)[0..128] Покупатель (Тег 1227)
+            "",                 // (Строка)[0..12] ИНН покупателя (Тег 1228)
+            "",                 // (Дата8) Дата рождения покупателя (тег 1243). Параметр передается в случаях, установленных законодательством РФ и только при регистрации ККТ в режиме ФФД 1.2.
+            0,                  // (Число)[0..3] Гражданство (тег 1244). Параметр передается в случаях, установленных законодательством РФ и только при регистрации ККТ в режиме ФФД 1.2.
+            0,                  // (Число)[0..2] Код вида документа, удостоверяющего личность (тег 1245). Параметр передается в случаях, установленных законодательством РФ и только при регистрации ККТ в режиме ФФД 1.2.
+            "",                 // (Строка)[0..64] Данные документа, удостоверяющего личность (Тег 1246). Параметр передается в случаях, установленных законодательством РФ и только при регистрации ККТ в режиме ФФД 1.2.
+            ""                  // (Строка)[0..256] Адрес покупателя (клиента), географический адрес, не email (Тег 1254). Параметр передается в случаях, установленных законодательством РФ и только при регистрации ККТ в режиме ФФД 1.2.
+        );
         // Получение номера чека и номера ФД
         Integer fdNum = Integer.valueOf((String) response[3]);
         Integer checkNum = Integer.valueOf((String) response[6]);
+        String date = (String) response[7];
+        String time = (String) response[8];
 
-        // Формирование копии чека
+        // Формирование копии чека в синхронном режиме
+        VikiPrint.executeCommand(port, 0x53, // Открыть копию чека
+            2,        // (Целое число) Тип чека
+            1,        // (Целое число 1..99) Номер отдела
+            "Петров", // (Имя оператора) Код и/или имя оператора
+            checkNum, // (Целое число) Номер чека
+            4,        // (Целое число 1..9999) Логический номер кассы
+            date,     // (Дата) Дата чека
+            time,     // (Время) Время чека
+            fdNum,    // (Целое число) Номер ФД
+            0         // (Целое число 0..5) Система налогообложения
+        );
+        VikiPrint.executeCommand(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "", (ffdVersion == 4 ? 0 : "шт"), 0, 4, 1, "", "", 0);
+        VikiPrint.executeCommand(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", (ffdVersion == 4 ? 11 : "шт"), 0, 4, 1, "", "", 0);
+        VikiPrint.executeCommand(port, 0x44);
+        VikiPrint.executeCommand(port, 0x47, 0, 1000, "");
+        response = VikiPrint.executeCommand(port, 0x31, 2, "customer@mail.ru", 0, "", "", "", "", "", "", "", "", 0, 0, "", "");
+        Assertions.assertEquals(2, response.length, "Получены лишние данные из копии чека");
+
+        // Формирование копии чека в пакетном режиме
         VikiPrint.executeCommandPacket(port, 0x53, 2 | 16, 1, "Петров", checkNum, 4, date, time, fdNum, 0);
-        VikiPrint.executeCommandPacket(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "");
-        VikiPrint.executeCommandPacket(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);
+        VikiPrint.executeCommandPacket(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "", (ffdVersion == 4 ? 0 : "шт"), 0, 4, 1, "", "", 0);
+        VikiPrint.executeCommandPacket(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", (ffdVersion == 4 ? 11 : "шт"), 0, 4, 1, "", "", 0);
         VikiPrint.executeCommandPacket(port, 0x44);
-        VikiPrint.executeCommandPacket(port, 0x47, 0, 1000);
-        response = VikiPrint.executeCommand(port, 0x31, 2, "customer@mail.ru");
+        VikiPrint.executeCommandPacket(port, 0x47, 0, 1000, "");
+        response = VikiPrint.executeCommand(port, 0x31, 2, "customer@mail.ru", 0, "", "", "", "", "", "", "", "", 0, 0, "", "");
         Assertions.assertEquals(2, response.length, "Получены лишние данные из копии чека");
     }
 }
