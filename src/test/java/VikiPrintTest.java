@@ -227,7 +227,7 @@ public class VikiPrintTest {
         String date = now.format(DATE_FORMATTER);
         String time = now.format(TIME_FORMATTER);
 
-        // Пробитие чека
+        // Регистрация чека
         VikiPrint.executeCommandPacket(port, 0x30, 2 | 16, 1, "Петров", "", 0, "");
         VikiPrint.executeCommandPacket(port, 0x42, "Штучный товар", "", 1, 100, 4, "", "", "");
         VikiPrint.executeCommandPacket(port, 0x42, "Весовой товар", "", 1.111, 100, 4, "", "", "", 11);
