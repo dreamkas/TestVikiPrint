@@ -24,7 +24,7 @@ public class VikiPrintWithVikiDriverTest {
     private static OutputStream out;
     private static Socket vikiDriverSocket;
     private static int maxFFDVersion;
-    private static final boolean PRINT = false;
+    private static final boolean PRINT = false; // Флаг печатать документа на чековой ленте или не печатать!
 
     @BeforeAll
     public static void setup() throws Exception {

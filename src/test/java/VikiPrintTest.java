@@ -18,7 +18,7 @@ import static ru.dreamkas.viki_print.VikiPrint.TIME_FORMATTER;
 public class VikiPrintTest {
     private static SerialPort port;
     private static int maxFFDVersion;
-    private static final boolean PRINT = false;
+    private static final boolean PRINT = false; // Флаг печатать документа на чековой ленте или не печатать!
 
     @BeforeAll
     public static void setup() throws Exception {
