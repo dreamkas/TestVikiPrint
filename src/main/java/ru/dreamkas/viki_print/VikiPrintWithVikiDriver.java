@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
+@SuppressWarnings("DuplicatedCode")
 public class VikiPrintWithVikiDriver {
     public static final Integer TCP_PORT = 50003;
     public static final String LOCAL_IP = "127.0.0.1";
@@ -26,6 +27,7 @@ public class VikiPrintWithVikiDriver {
     private static final char ETX = 0x03;
     private static final char FS = 0x1C;
     private static final String PASSWORD = "PIRI";
+    public static final long TIMEOUT = 3_000_000_000L; //(3 сек. в наносекундах)
     private static int PACKET_ID = 0x20;
 
     public static void main(String[] args) throws Exception {
@@ -35,7 +37,6 @@ public class VikiPrintWithVikiDriver {
         OutputStream out = vikiDriverSocket.getOutputStream();
 
         try {
-
             System.out.println("Проверка связи с ККТ");
             checkConnection(out, in);
 
@@ -136,24 +137,7 @@ public class VikiPrintWithVikiDriver {
     public static void checkConnection(OutputStream out, InputStream in) throws Exception {
         out.write(ENQ);
         System.out.printf("==> %s%n", ENQ);
-
-        long endTime = System.nanoTime() + 3000000000L;
-        if (System.nanoTime() < endTime) {
-            while (!(in.available() > 0)) {
-                Thread.yield();
-            }
-        } else {
-            throw new Exception("ККТ недоступен. Проверьте подключение.");
-        }
-
-        int i = 0;
-        byte[] bytes = new byte[0];
-        while ((i = in.available()) > 0) {
-            bytes = new byte[i];
-            in.read(bytes);
-        }
-
-        System.out.printf("<~~ %s%n", toString(bytes));
+        byte[] bytes = readPacket(in);
         for (byte[] response : splitPackets(bytes)) {
             System.out.printf("<== %s%n", toString(response));
             if (response[0] != ACK) {
@@ -184,23 +168,7 @@ public class VikiPrintWithVikiDriver {
         }
         int responsePacketId = 0;
         while (responsePacketId < PACKET_ID - 1) {
-            long endTime = System.nanoTime() + 3000000000L;
-            if (System.nanoTime() < endTime) {
-                while (!(in.available() > 0)) {
-                    Thread.yield();
-                }
-            } else {
-                throw new Exception("ККТ недоступен. Проверьте подключение.");
-            }
-
-            int i = 0;
-            byte[] bytes = new byte[0];
-            while ((i = in.available()) > 0) {
-                bytes = new byte[i];
-                in.read(bytes);
-            }
-
-            System.out.printf("<~~ %s%n", toString(bytes));
+            byte[] bytes = readPacket(in);
             for (byte[] response : splitPackets(bytes)) {
                 System.out.printf("<== %s%n", toString(response));
                 Object[] responseData = parseResponse(response);
@@ -218,6 +186,28 @@ public class VikiPrintWithVikiDriver {
             }
         }
         return result;
+    }
+
+    private static byte[] readPacket(InputStream in) throws Exception {
+        long endTime = System.nanoTime() + TIMEOUT;
+        if (System.nanoTime() < endTime) {
+            while (!(in.available() > 0)) {
+                Thread.yield();
+            }
+        } else {
+            throw new Exception("ККТ недоступен. Проверьте подключение.");
+        }
+
+        int i;
+        byte[] bytes = new byte[0];
+        while ((i = in.available()) > 0) {
+            bytes = new byte[i];
+            //noinspection ResultOfMethodCallIgnored
+            in.read(bytes);
+        }
+
+        System.out.printf("<~~ %s%n", toString(bytes));
+        return bytes;
     }
 
     //Разбиение полученных байтов по пакетам
@@ -313,4 +303,3 @@ public class VikiPrintWithVikiDriver {
         return StringUtils.leftPad(Integer.toHexString(value & 0xFF).toUpperCase(), 2, '0');
     }
 }
-
