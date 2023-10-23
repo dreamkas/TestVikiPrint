@@ -18,6 +18,9 @@ public class VikiPrint {
     public static final String COM_PORT = "COM11";
     private static final Pattern LOG_PATTERN = Pattern.compile("\\p{Print}");
     private static final Charset ENCODING = Charset.forName("cp866");
+    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("ddMMyy");
+    public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HHmmss");
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("ddMMyyHHmmss");
     private static final byte ENQ = 0x05;
     private static final byte ACK = 0x06;
     private static final char STX = 0x02;
@@ -41,6 +44,12 @@ public class VikiPrint {
 
             Object[] responseData;
 
+            System.out.println("Обмен информацией с ФН");
+            responseData = VikiPrint.executeCommand(port, 0x78, 22);
+            System.out.printf("Текущая версия ФФД: %s%n", Integer.parseInt((String) responseData[1]) == 4 ? "1.2" : "1.05");
+            System.out.printf("Максимальная поддерживаемая версия ФФД: %s%n", Integer.parseInt((String) responseData[2]) == 4 ? "1.2" : "1.05");
+            System.out.println();
+
             System.out.println("Запрос состояния печатающего устройства");
             responseData = executeCommand(port, 0x04);
             System.out.printf("Статус печатающего устройства: %s%n", responseData[0]);
@@ -62,8 +71,8 @@ public class VikiPrint {
             System.out.printf("Статус документа: %s%n", docStatus);
             if ((status & (1L)) != 0) { // Не выполнена команда “Начало работы”
                 LocalDateTime now = LocalDateTime.now();
-                String date = now.format(DateTimeFormatter.ofPattern("ddMMyy"));
-                String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
+                String date = now.format(DATE_FORMATTER);
+                String time = now.format(TIME_FORMATTER);
                 VikiPrint.executeCommand(port, 0x10, date, time); // Начало работы с ККТ (0x10)
             }
             if ((docStatus & 0x1F) != 0) { // Открыт документ
@@ -120,12 +129,14 @@ public class VikiPrint {
             System.out.printf("Время документа: %s%n", responseData[8]);
             System.out.println();
 
-//            Закрытие архива ФН
-//            responseData = executeCommand(port, 0x71, "Петров");
-//            System.out.printf("ФД: %s%n", responseData[0]);
-//            System.out.printf("ФП: %s%n", responseData[1]);
-//            System.out.printf("Дата документа: %s%n", responseData[2]);
-//            System.out.printf("Время документа: %s%n", responseData[3]);
+/*
+            Закрытие архива ФН
+            responseData = executeCommand(port, 0x71, "Петров");
+            System.out.printf("ФД: %s%n", responseData[0]);
+            System.out.printf("ФП: %s%n", responseData[1]);
+            System.out.printf("Дата документа: %s%n", responseData[2]);
+            System.out.printf("Время документа: %s%n", responseData[3]);
+*/
 
         } finally {
             port.closePort();
@@ -175,8 +186,11 @@ public class VikiPrint {
                 Thread.yield();
             }
             byte[] bytes = port.readBytes();
-            System.out.printf("<~~ %s%n", toString(bytes));
-            for (byte[] response : splitPackets(bytes)) {
+            List<byte[]> splitPackets = splitPackets(bytes);
+            if (splitPackets.size() > 1) {
+                System.out.printf("<~~ %s%n", toString(bytes));
+            }
+            for (byte[] response : splitPackets) {
                 System.out.printf("<== %s%n", toString(response));
                 Object[] responseData = parseResponse(response);
                 responsePacketId = (int) responseData[0];
@@ -224,7 +238,12 @@ public class VikiPrint {
             strPacket.append(FS);                           //
         } else {                                            //
             for (Object param : parameters) {               //
-                strPacket.append(param).append(FS);         // Данные
+                String value = param.toString();
+                StringBuilder sb = new StringBuilder();
+                for (char c : value.toCharArray()) {
+                    sb.append(c >= 32 ? c : ("$" + String.format("%02X", (int) c)));
+                }
+                strPacket.append(sb).append(FS);         // Данные
             }                                               //
         }                                                   //
         strPacket.append(ETX);                              // ETX
