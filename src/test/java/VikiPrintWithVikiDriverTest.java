@@ -15,7 +15,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import jssc.SerialPortException;
-import ru.dreamkas.viki_print.VikiPrint;
 import ru.dreamkas.viki_print.VikiPrintWithVikiDriver;
 
 public class VikiPrintWithVikiDriverTest {

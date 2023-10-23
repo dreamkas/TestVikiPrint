@@ -1,30 +1,19 @@
 package ru.dreamkas.viki_print;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Timer;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-
-import com.sun.deploy.util.Waiter;
-
-import javafx.util.Duration;
 
 public class VikiPrintWithVikiDriver {
     public static final Integer TCP_PORT = 50003;
@@ -147,9 +136,16 @@ public class VikiPrintWithVikiDriver {
     public static void checkConnection(OutputStream out, InputStream in) throws Exception {
         out.write(ENQ);
         System.out.printf("==> %s%n", ENQ);
-        while (!(in.available() > 0)) {
-            Thread.yield();
+
+        long endTime = System.nanoTime() + 3000000000L;
+        if (System.nanoTime() < endTime) {
+            while (!(in.available() > 0)) {
+                Thread.yield();
+            }
+        } else {
+            throw new Exception("ККТ недоступен. Проверьте подключение.");
         }
+
         int i = 0;
         byte[] bytes = new byte[0];
         while ((i = in.available()) > 0) {
@@ -188,9 +184,15 @@ public class VikiPrintWithVikiDriver {
         }
         int responsePacketId = 0;
         while (responsePacketId < PACKET_ID - 1) {
-            while (!(in.available() > 0)) {
-                Thread.yield();
+            long endTime = System.nanoTime() + 3000000000L;
+            if (System.nanoTime() < endTime) {
+                while (!(in.available() > 0)) {
+                    Thread.yield();
+                }
+            } else {
+                throw new Exception("ККТ недоступен. Проверьте подключение.");
             }
+
             int i = 0;
             byte[] bytes = new byte[0];
             while ((i = in.available()) > 0) {
