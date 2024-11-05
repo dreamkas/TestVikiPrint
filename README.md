@@ -11,6 +11,10 @@ git clone https://gitlab.dreamkas.ru/viki/test-pirit
 
 Далее можно открыть в IDE (например IntelliJ Idea) как Gradle проект указав файл **build.gradle**
 
+Более подробно о разрешительном режиме можно прочитать в документации ЧЗ по ссылке:
+[Методические рекомендации по разрешительному режиму ЧЗ](src/main/resources/metodic.pdf). 
+
+
 В проекте задействованы библиотеки:</br>
 Tests:
 - 'org.junit.jupiter:junit-jupiter-api:5.8.1'
